@@ -74,12 +74,37 @@ class SystemMVfungler(MVFungler):
                     mapping["terms"]["messages"][k] = terms.get(k,["",""])[1]
         # 
         export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+    
+    def apply_maps(self, map_file: pathlib.Path):
+        mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
+        system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
+
+        if mapping.get("type","") != "system":
+            print(f"[ERR] Failed applying, {map_file.name} does not match required type.")
+            return
+        
+        if self.config["System"]["armor_types"]:
+            for idx, value in mapping["armor_types"]:
+                system_data["armorTypes"][idx] = value
+        if self.config["System"]["equip_types"]:
+            for idx, value in mapping["equip_types"]:
+                system_data["equipTypes"][idx] = value
+        if self.config["System"]["skill_types"]:
+            for idx, value in mapping["skill_types"]:
+                system_data["skillTypes"][idx] = value
+        if self.config["System"]["terms"]:
+            system_data["terms"] = mapping["terms"]
+        return system_data
 
 
 class ActorMVFungler(MVFungler):
     def apply_maps(self, map_file: pathlib.Path):
         mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
         actors = orjson.loads(self.file.read_text(encoding="utf-8"))
+
+        if mapping.get("type","") != "actors":
+            print(f"[ERR] Failed applying, {map_file.name} does not match required type.")
+            return
 
         export_actors = []
         for actor in actors:
@@ -266,20 +291,40 @@ class MapsMVFungler(MVFungler):
         return page_list_events
 
     def apply_maps(self, map_file: pathlib.Path):
-        old_events = orjson.loads(self.file.read_bytes())
+        old_map = orjson.loads(self.file.read_bytes())
         mapping = orjson.loads(map_file.read_bytes())
         if mapping.get("type","") != "map":
             print(f"[ERR] Failed applying, {map_file.name} does not match required type.")
             return
-        for k,v in mapping["events"].items():
-            k = int(k)
-            events = old_events[k]
-            for idx, page in v.items():
-                page_idx = int(idx)
+        old_events = old_map["events"]
+        for evnt_id, page_maps in mapping["events"].items():
+            evnt_id = int(evnt_id)
+            
+            event_data = old_events[evnt_id]
+
+
+            for page_code_idx, page in page_maps.items():
+                page_code_idx = int(page_code_idx)
                 for trans in page:
-                    for txt_idx, ptr in trans["pointer"]:
-                        events[page_idx][ptr][1] = trans[txt_idx]
-            old_events[k] = events
+                    if trans["type"] == "text":
+                        # print(page, page_code_idx, old_events[evnt_id]['pages'])
+                        # 
+                        # print([page_code_idx])
+                        for txt_idx, ptr in enumerate(trans["pointer"]):
+                            # print(old_events[evnt_id]['pages'][page_code_idx])
+                            text_event = old_events[evnt_id]['pages'][page_code_idx]['list'][ptr]
+                            text_event['parameters'][0] = trans['text'][txt_idx]
+                            old_events[evnt_id]['pages'][page_code_idx]['list'][ptr] = text_event
+                            # print()
+                            pass
+                            # event_data[]
+                            # events[page_idx][ptr][1] = trans[txt_idx]
+            #         elif trans["type"] == "text_choice":
+            #             for txt_idx, ptr in enumerate(trans["pointer"][1:]):
+            #                 # print(events[page_idx], ptr, trans[txt_idx])
+            #                 events[page_idx][ptr][1] = trans[txt_idx]
+            #             events[page_idx][trans["pointer"][0]][0] = trans["text"]
+            old_events[evnt_id] = event_data
         return old_events
 
 
@@ -290,7 +335,7 @@ class MapsMVFungler(MVFungler):
         events_data = orjson.loads(self.file.read_bytes())
         # events = []
 
-        for idx, event in enumerate(
+        for evidx, event in enumerate(
             events_data.get("events", []),
         ):
             if not event:
@@ -307,7 +352,7 @@ class MapsMVFungler(MVFungler):
                     pages[str(idx)] = page_list_events
 
             if pages:
-                mapping["events"][str(idx)] = pages
+                mapping["events"][str(evidx)] = pages
         if mapping["events"]:
             export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         else:

@@ -21,4 +21,5 @@ class LanguageModel:
     async def translate(self, text):
         raise NotImplementedError()
     
-class OpenAI:
+class Googled:
+    pass
