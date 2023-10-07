@@ -21,5 +21,7 @@ class LanguageModel:
     async def translate(self, text):
         raise NotImplementedError()
     
-class Googled:
-    pass
+class Googled(LanguageModel):
+    
+    async def batch_translate(self, text:list):
+        raise NotImplementedError()

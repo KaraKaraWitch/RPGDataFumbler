@@ -30,6 +30,8 @@ class MVFungler:
     def create_maps(self, export_file: pathlib.Path):
         raise NotImplementedError()
 
+    def export_maps(self, map_file: pathlib.Path):
+        raise NotImplementedError()
 
 class SystemMVfungler(MVFungler):
     def create_maps(self, export_file: pathlib.Path):
@@ -166,6 +168,21 @@ class WeaponsMVFungler(MVFungler):
             export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         else:
             print("No Exportable Weapons:", self.file.name)
+    
+    def apply_maps(self, map_file: pathlib.Path):
+        mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
+        weapons = orjson.loads(self.file.read_text(encoding="utf-8"))
+        if mapping.get("type", "") != "weapons":
+            print(
+                f"[ERR] Failed applying, {map_file.name} does not match required type."
+            )
+            return
+        for weapon_idx_s,trans_data in mapping["weapon"].items():
+            weapon_idx = int(weapon_idx_s)
+            weapons[weapon_idx]["name"] = trans_data["name"]
+            weapons[weapon_idx]["description"] = trans_data["desc"]
+            weapons[weapon_idx]["note"] = trans_data["note"]
+        return weapons
 
 
 class CommonEventMVFungler(MVFungler):
@@ -244,6 +261,34 @@ class CommonEventMVFungler(MVFungler):
             export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         pbar.close()
 
+
+    def apply_maps(self, map_file: pathlib.Path):
+        old_map = orjson.loads(self.file.read_bytes())
+        mapping = orjson.loads(map_file.read_bytes())
+        if mapping.get("type", "") != "common_event":
+            print(
+                f"[ERR] Failed applying, {map_file.name} does not match required type."
+            )
+            return
+        for idx, map_event in mapping["events"].items():
+            for text_data in map_event:
+                if text_data["type"] == "text":
+                    for txt_idx, ptr in enumerate(text_data["pointer"]):
+                        txt_event = old_map[int(idx)]["list"][ptr]
+                        txt_event["parameters"][0] = text_data["text"][txt_idx]
+                        old_map[int(idx)]["list"][ptr] = txt_event
+                elif text_data["type"] == "text_choice":
+                    for txt_idx, ptr in enumerate(text_data["pointer"][1:]):
+                        txt_event = old_map[int(idx)]["list"][ptr]
+                        txt_event["parameters"][0] = text_data["text"][txt_idx]
+                        old_map[int(idx)]["list"][ptr] = txt_event
+                    zero_ptr = text_data["pointer"][0]
+                    txt_event = old_map[int(idx)]["list"][zero_ptr]
+                    txt_event["parameters"][0] = text_data["text"]
+                    old_map[int(idx)]["list"][zero_ptr] = txt_event
+        return old_map
+                    
+                
 
 class MapsMVFungler(MVFungler):
     def parse_page_lists(self, page_list_data: list):
@@ -353,6 +398,40 @@ class MapsMVFungler(MVFungler):
         return old_map
 
         # return super().apply_maps(map_file)
+
+    def export_maps(self, map_file: pathlib.Path):
+        mapping = orjson.loads(map_file.read_bytes())
+        # return super().exports_maps(map_file)
+        if mapping.get("type", "") != "map":
+            print(
+                f"[ERR] Failed exporting, {map_file.name} does not match required type."
+            )
+            return
+        export = []
+        for evidx, event in mapping['events'].items():
+            for pgidx, page in event.items():
+                zz2 = []
+                for text_data in page:
+                    if text_data["type"] == "text":
+                        compo = text_data["text"]
+                        for idx, i in enumerate(compo):
+                            if not i.strip():
+                                compo[idx] = "<Empty String>"
+                        zz = "\n"+"\n".join(compo)
+                        zz = f"\n{zz}"
+                    elif text_data["type"] == "text_choice":
+                        compo = text_data["text"]
+                        for idx, i in enumerate(compo):
+                            if not i.strip():
+                                compo[idx] = "<Empty String>"
+                        zz = "\n".join(compo)
+                        zz = f"\nChoices:\n{zz}"
+                    else:
+                        raise Exception("???")
+                    zz2.append(zz)
+                export.append(f"### {evidx}-{pgidx}\n\n" + "\n".join(zz2))
+        return "\n\n".join(export)
+                
 
     def create_maps(self, export_file: pathlib.Path):
         mapping = {"type": "map", "events": {}}
