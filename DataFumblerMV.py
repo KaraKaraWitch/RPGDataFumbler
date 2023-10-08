@@ -152,32 +152,32 @@ class ActorMVFungler(MVFungler):
         export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
 
-class WeaponsMVFungler(MVFungler):
+class ItemMVFungler(MVFungler):
     def create_maps(self, export_file: pathlib.Path):
-        mapping = {"type": "weapons", "weapon": {}}
+        mapping = {"type": "items", "item": {}}
         weapons_data = orjson.loads(self.file.read_bytes())
         for weapon in weapons_data:
             if not weapon or not weapon["name"]:
                 continue
-            mapping["weapon"][str(weapon["id"])] = {
+            mapping["item"][str(weapon["id"])] = {
                 "name": weapon["name"],
                 "desc": weapon["description"],
                 "note": weapon["note"],
             }
-        if mapping["weapon"]:
+        if mapping["item"]:
             export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         else:
-            print("No Exportable Weapons:", self.file.name)
+            print("No Exportable Items:", self.file.name)
     
     def apply_maps(self, map_file: pathlib.Path):
         mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
         weapons = orjson.loads(self.file.read_text(encoding="utf-8"))
-        if mapping.get("type", "") != "weapons":
+        if mapping.get("type", "") not in ["weapons","items"]:
             print(
                 f"[ERR] Failed applying, {map_file.name} does not match required type."
             )
             return
-        for weapon_idx_s,trans_data in mapping["weapon"].items():
+        for weapon_idx_s,trans_data in mapping["item"].items():
             weapon_idx = int(weapon_idx_s)
             weapons[weapon_idx]["name"] = trans_data["name"]
             weapons[weapon_idx]["description"] = trans_data["desc"]
@@ -280,7 +280,7 @@ class CommonEventMVFungler(MVFungler):
                 elif text_data["type"] == "text_choice":
                     for txt_idx, ptr in enumerate(text_data["pointer"][1:]):
                         txt_event = old_map[int(idx)]["list"][ptr]
-                        txt_event["parameters"][0] = text_data["text"][txt_idx]
+                        txt_event["parameters"][1] = text_data["text"][txt_idx]
                         old_map[int(idx)]["list"][ptr] = txt_event
                     zero_ptr = text_data["pointer"][0]
                     txt_event = old_map[int(idx)]["list"][zero_ptr]
@@ -469,7 +469,7 @@ def resolve_file(file_url: pathlib.Path, config: dict):
 
         item = content[1]
         actor_tests = ["characterIndex", "characterName", "name", "note", "profile"]
-        weapon_tests = ["traits", "iconIndex", "name", "note"]
+        weapon_tests = ["description", "name", "note"]
         # event_tests = ["characterIndex", "characterName", "name", "note", "profile"]
         if sum([act_test in actor_tests for act_test in item]) == len(actor_tests):
             return ActorMVFungler(file_url, config)
@@ -478,7 +478,13 @@ def resolve_file(file_url: pathlib.Path, config: dict):
             == len(weapon_tests)
             and "weapon" in file_url.name.lower()
         ):
-            return WeaponsMVFungler(file_url, config)
+            return ItemMVFungler(file_url, config)
+        if (
+            sum([weapon_test in weapon_tests for weapon_test in item])
+            == len(weapon_tests)
+            and "item" in file_url.name.lower()
+        ):
+            return ItemMVFungler(file_url, config)
         if "commonevents" in file_url.name.lower():
             return CommonEventMVFungler(file_url, config)
 

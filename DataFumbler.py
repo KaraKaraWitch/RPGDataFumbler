@@ -6,9 +6,9 @@
 import pathlib
 import shutil
 import typing
-import orjson
 import typer
 import tomli
+import json
 
 app = typer.Typer()
 
@@ -146,7 +146,8 @@ def apply_data(data: pathlib.Path, config: typing.Optional[pathlib.Path] = None)
                 (apply_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                 print(f"[Apply] {(tl_folder / rel)}")
                 try:
-                    (apply_folder / rel).write_bytes(orjson.dumps(cls.apply_maps(tl_folder / rel)))
+                    # For some reason, saving it as unscaled unicode can cause images to not load?
+                    (apply_folder / rel).write_bytes(json.dumps(cls.apply_maps(tl_folder / rel)).encode(encoding="utf-8"))
                 except NotImplementedError:
                     print(f"[TODO]: {rel.name}")
 
