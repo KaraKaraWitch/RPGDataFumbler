@@ -119,9 +119,12 @@ terms_patch = {
 
 
 class SystemMVfungler(MVZFungler):
-    def create_maps(self, export_file: pathlib.Path):
-        
-        mapping: typing.Dict[str, typing.Any] = {"type": "system"}
+
+    fungler_type = "system"
+
+    def create_maps(self):
+        self.read_mapped(create=True)
+        mapping: typing.Dict[str, typing.Any] = {"type": self.fungler_type}
         system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
         if self.config["System"]["armor_types"]:
             mapping["armor_types"] = []
@@ -171,12 +174,12 @@ class SystemMVfungler(MVZFungler):
         mapping["game_title"] = system_data["gameTitle"]
         export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
-    def apply_maps(self, map_file: pathlib.Path):
+    def apply_maps(self):
         mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
         system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
         if not self.type_check(map_file, mapping, "system"):
             return
-        
+
         if self.config["System"]["armor_types"]:
             for idx, value in mapping["armor_types"]:
                 system_data["armorTypes"][idx] = value

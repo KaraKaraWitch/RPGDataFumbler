@@ -71,14 +71,11 @@ class MapsMVFungler(MVZFungler):
             evnt_id = int(evnt_id)
 
             event_data = old_events[evnt_id]
-
+            # TODO: Eventually refactor these bits
             for page_code_idx, page in page_maps.items():
                 page_code_idx = int(page_code_idx)
                 for trans in page:
                     if trans["type"] == "text":
-                        # print(page, page_code_idx, old_events[evnt_id]['pages'])
-                        #
-                        # print([page_code_idx])
                         for txt_idx, ptr in enumerate(trans["pointer"]):
                             if txt_idx == 0 and "101code" in trans["meta"]:
                                 text_event = old_events[evnt_id]["pages"][

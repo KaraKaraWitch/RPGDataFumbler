@@ -6,17 +6,74 @@ import orjson
 
 
 class MVZFungler:
-    def __init__(self, file: pathlib.Path, config: dict) -> None:
-        """Base class that implements MV Related classes
+    def __init__(self, original_file: pathlib.Path, mapped_file:pathlib.Path, export_file:pathlib.Path, config: dict) -> None:
+        """Base class that implements MV Related classes.
 
+        You will need to extend the following classes:
+
+        - create_maps (Creates/Extracts the mapping from the game)
+        - apply_maps (Applies the mapping back to base game)
+
+
+        The following are optional but recommended.
+
+        - export_map
+        - import_map
+        
         Args:
-            file (pathlib.Path): The Input file from the game.
+            original_file (pathlib.Path): The Input file from the game.
+            mapped_file (pathlib.Path): _description_
+            export_file (pathlib.Path): _description_
             config (dict): Configuration for the project
         """
-        self.file: pathlib.Path = file
+        self.original_file: pathlib.Path = original_file
+        self.mapped_file: pathlib.Path = mapped_file
+        self.export_file: pathlib.Path = mapped_file
         self.config = config
         self.game_type = self.config["General"].get("type", "MV")
         self.logger = logging.getLogger("DF|MVZ")
+        self._cached_orig_data = None
+
+    fungler_type = None
+
+    def apply_maps(self) -> bool:
+        raise NotImplementedError()
+
+    def export_map(self) -> bool:
+        """Exports the map fil
+
+        Args:
+            map_file (pathlib.Path): _description_
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            typing.Union[list, dict]: _description_
+        """
+        raise NotImplementedError()
+
+    def create_maps(self) -> bool:
+        """Creates the mapping file and writes it the
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            bool: _description_
+        """
+        raise NotImplementedError()
+
+    def import_map(self) -> bool:
+        """Imports the data from "exported" file.
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            bool: _description_
+        """
+        raise NotImplementedError()
 
     def type_check(self, map_file:pathlib.Path, mapping:dict, type:str):
         if mapping.get("type", "") != type:
@@ -26,31 +83,29 @@ class MVZFungler:
             return False
         return True
     
-    def load_raw(self, init_dict:dict, init_type:str):
-        """Loads and initalizes a dictionary from the raw file and mapping data...
+    def read_mapped(self, create:bool=False) -> typing.Union[None, typing.Dict[str,typing.Any]]:
+        """Reads the mapped file into a dictionary.
+
+        Additionally, it does a simple type check (That can be spoofed).
 
         Args:
-            init_dict (dict): Inital Dict
-            init_type (str): The type for the said class.
+            type (str): The "type" to check against.
+            create (bool, optional): _description_. Defaults to False.
 
         Returns:
             _type_: _description_
         """
-        mapping: typing.Dict[str, typing.Any] = {"type": init_type, **init_dict}
-        raw_data = orjson.loads(self.file.read_text(encoding="utf-8"))
-        return mapping, raw_data
-
-    def apply_maps(self, map_file: pathlib.Path):
-        raise NotImplementedError()
-
-    def create_maps(self, export_file: pathlib.Path):
-        raise NotImplementedError()
-
-    def export_map(self, map_file: pathlib.Path):
-        raise NotImplementedError()
-
-    def import_map(self, translated_file: pathlib.Path, inter_json: pathlib.Path):
-        raise NotImplementedError()
+        if self.fungler_type is None:
+            raise Exception(f"fungler_type is missing an inheritence.")
+        if self.mapped_file.exists():
+            mapping = orjson.loads(self.mapped_file.read_bytes())
+            if self.type_check(self.mapped_file, mapping, self.fungler_type):
+                return mapping
+            else:
+                return None
+        else:
+            if create:
+                return {"type": self.fungler_type}
 
     def parse_page_lists(self, page_list_data: list):
         """Processes MV/MZ Pages found in maps.json and CommonEvents.json
@@ -127,3 +182,10 @@ class MVZFungler:
             elif page_data["code"] == 102:
                 process_code102(t_idx)
         return page_list_events
+    
+    def _get_original_data(self) -> typing.Union[typing.Dict[str,typing.Any], typing.List[typing.Any]]:
+        if not self._cached_orig_data:
+            self._cached_orig_data = orjson.loads(self.original_file.read_bytes())
+        return self._cached_orig_data
+
+    original_data = property(fget=_get_original_data)
