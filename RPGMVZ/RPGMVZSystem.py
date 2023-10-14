@@ -1,3 +1,11 @@
+import pathlib
+import typing
+
+import orjson
+from .RPGMVZBase import MVZFungler
+
+# Common Terms used for quick patches.
+# Reduces work required to translate stuff.
 terms_patch = {
     "basic": {
         "レベル": "Level",
@@ -108,3 +116,77 @@ terms_patch = {
         "victory": ["%1の勝利！", "%1 was victorious!"],
     },
 }
+
+
+class SystemMVfungler(MVZFungler):
+    def create_maps(self, export_file: pathlib.Path):
+        
+        mapping: typing.Dict[str, typing.Any] = {"type": "system"}
+        system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
+        if self.config["System"]["armor_types"]:
+            mapping["armor_types"] = []
+            for idx, armor in enumerate(system_data["armorTypes"]):
+                if armor:
+                    mapping["armor_types"].append([idx, armor])
+        if self.config["System"]["equip_types"]:
+            mapping["equip_types"] = []
+            for idx, equip in enumerate(system_data["equipTypes"]):
+                if equip:
+                    mapping["equip_types"].append([idx, equip])
+        if self.config["System"]["skill_types"]:
+            mapping["skill_types"] = []
+            for idx, skill in enumerate(system_data["skillTypes"]):
+                if skill:
+                    mapping["skill_types"].append([idx, skill])
+        if self.config["System"]["terms"]:
+            mapping["terms"] = system_data["terms"]
+            terms = terms_patch["basic"]
+            for k, v in enumerate(mapping["terms"]["basic"]):
+                if v in terms:
+                    self.logger.info(
+                        f'[SystemCommon|Basic] Found common term for: {mapping["terms"]["basic"][k]}'
+                    )
+                    mapping["terms"]["basic"][k] = terms[v]
+            terms = terms_patch["commands"]
+            for k, v in enumerate(mapping["terms"]["commands"]):
+                if v in terms:
+                    self.logger.info(
+                        f'[SystemCommon|Commands] Found common term for: {mapping["terms"]["commands"][k]}'
+                    )
+                    mapping["terms"]["commands"][k] = terms[v]
+            terms = terms_patch["params"]
+            for k, v in enumerate(mapping["terms"]["params"]):
+                if v in terms:
+                    self.logger.info(
+                        f'[SystemCommon|Params] Found common term for: {mapping["terms"]["params"][k]}'
+                    )
+                    mapping["terms"]["params"][k] = terms[v]
+            terms = terms_patch["messages"]
+            for k, v in mapping["terms"]["messages"].items():
+                if v == terms.get(k, ["", ""])[0]:
+                    self.logger.info(
+                        f'[SystemCommon|Messages] Found common term for: {mapping["terms"]["messages"][k]}'
+                    )
+                    mapping["terms"]["messages"][k] = terms.get(k, ["", ""])[1]
+        mapping["game_title"] = system_data["gameTitle"]
+        export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+
+    def apply_maps(self, map_file: pathlib.Path):
+        mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
+        system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
+        if not self.type_check(map_file, mapping, "system"):
+            return
+        
+        if self.config["System"]["armor_types"]:
+            for idx, value in mapping["armor_types"]:
+                system_data["armorTypes"][idx] = value
+        if self.config["System"]["equip_types"]:
+            for idx, value in mapping["equip_types"]:
+                system_data["equipTypes"][idx] = value
+        if self.config["System"]["skill_types"]:
+            for idx, value in mapping["skill_types"]:
+                system_data["skillTypes"][idx] = value
+        if self.config["System"]["terms"]:
+            system_data["terms"] = mapping["terms"]
+        system_data["gameTitle"] = mapping["game_title"]
+        return system_data
