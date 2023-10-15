@@ -2,19 +2,21 @@
 
 import logging
 import pathlib
+import shutil
 import typing
 import orjson
 
 from .RPGMVZItems import ItemMVFungler
 from .RPGMVZEvents import CommonEventMVFungler, MapsMVFungler
 from .RPGMVZSystem import SystemMVfungler
+from .RPMMVZActors import ActorMVFungler
 
 class MVZHandler:
     def __init__(self, game_file:pathlib.Path, config:dict, project_name:str="tl_workspace"):
         self.config = config
         self.game_file =game_file
         self.project_name = project_name
-        self.game_type = self.config["General"]["type"]
+        self.game_type = self.config["General"].get("type","MV")
         self.logger = logging.getLogger("MVZ|Handler")
         self._project_folders:typing.Optional[typing.Dict] = None
 
@@ -77,26 +79,26 @@ class MVZHandler:
             # event_tests = ["characterIndex", "characterName", "name", "note", "profile"]
             if sum([act_test in actor_tests for act_test in item]) == len(actor_tests):
                 return ActorMVFungler(orig_file, map_file, export_file, self.config)
-            if (
-                sum([weapon_test in weapon_tests for weapon_test in item])
-                == len(weapon_tests)
-                and "weapon" in orig_file.name.lower()
-            ):
-                return ItemMVFungler(orig_file, map_file, export_file, self.config)
-            if (
-                sum([weapon_test in weapon_tests for weapon_test in item])
-                == len(weapon_tests)
-                and "item" in orig_file.name.lower()
-            ):
-                return ItemMVFungler(orig_file, map_file, export_file, self.config)
-            if (
-                sum([weapon_test in weapon_tests for weapon_test in item])
-                == len(weapon_tests)
-                and "armors" in orig_file.name.lower()
-            ):
-                return ItemMVFungler(orig_file, map_file, export_file, self.config)
-            if "commonevents" in orig_file.name.lower():
-                return CommonEventMVFungler(orig_file, map_file, export_file, self.config)
+            # if (
+            #     sum([weapon_test in weapon_tests for weapon_test in item])
+            #     == len(weapon_tests)
+            #     and "weapon" in orig_file.name.lower()
+            # ):
+            #     return ItemMVFungler(orig_file, map_file, export_file, self.config)
+            # if (
+            #     sum([weapon_test in weapon_tests for weapon_test in item])
+            #     == len(weapon_tests)
+            #     and "item" in orig_file.name.lower()
+            # ):
+            #     return ItemMVFungler(orig_file, map_file, export_file, self.config)
+            # if (
+            #     sum([weapon_test in weapon_tests for weapon_test in item])
+            #     == len(weapon_tests)
+            #     and "armors" in orig_file.name.lower()
+            # ):
+            #     return ItemMVFungler(orig_file, map_file, export_file, self.config)
+            # if "commonevents" in orig_file.name.lower():
+            #     return CommonEventMVFungler(orig_file, map_file, export_file, self.config)
 
             # else:
             #     print()
@@ -108,33 +110,37 @@ class MVZHandler:
         # Events stuff
 
 
-    def create_maps(self):
+    def create_maps(self, replace:bool=False):
         # folders:typing.Dict[str, pathlib.Path], config_dict
         if not self.game_folder:
             return
+        tl_folder = self.game_folder["tl_root"] / "data"
+        export_folder = self.game_folder["export"]
         for json_file in self.game_folder["data"].rglob("*.json"):
             rel = json_file.relative_to(self.game_folder["data"])
-            tl_folder = self.game_folder["tl_root"] / "data"
-            export_folder = self.game_folder["export"]
+            
             map_file = tl_folder / rel
             export_file = export_folder / rel
             cls = self.resolve_file(json_file, map_file, export_file)
             if cls:
-                if (tl_folder / rel).exists() and not config_dict["General"]["replace"]:
+                if (tl_folder / rel).exists() and replace:
                     pass
                     # logger.info(f"Skip dump for: {rel.name}")
                 else:
-                    logger.info(f"Dumping: {rel.name}")
+                    self.logger.info(f"Dumping: {rel.name}")
+                    if not (tl_folder / rel).parent.exists():
+                        (tl_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                     cls.create_maps()
-        for script_file in folders["scripts"].rglob("*.js"):
-            rel = script_file.relative_to(folders["scripts"])
-            tl_folder = folders["tl_root"] / "script"
-            (tl_folder / rel).parent.mkdir(parents=True, exist_ok=True)
-            if not (tl_folder / rel).exists() and not config_dict["General"]["replace_scripts"]:
-                logger.info(f"Dumping: {rel.name}")
+        tl_folder = self.game_folder["tl_root"] / "script"
+        for script_file in self.game_folder["scripts"].rglob("*.js"):
+            rel = script_file.relative_to(self.game_folder["scripts"])
+            if not (tl_folder / rel).exists() and replace:
+                self.logger.info(f"Dumping: {rel.name}")
+                if not (tl_folder / rel).parent.exists():
+                    (tl_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy(script_file, tl_folder / rel)
         # Marking folder / I hope someone doesn't delete this...
-        (folders["tl_root"] / ".TLPROJECT").touch()
+        (self.game_folder["tl_root"] / ".TLPROJECT").touch()
 
     def extract(self, override:bool=False):
         """Extracts the translatable components into the project folder

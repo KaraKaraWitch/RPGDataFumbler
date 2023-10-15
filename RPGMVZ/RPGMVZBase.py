@@ -183,9 +183,8 @@ class MVZFungler:
                 process_code102(t_idx)
         return page_list_events
     
-    def _get_original_data(self) -> typing.Union[typing.Dict[str,typing.Any], typing.List[typing.Any]]:
+    @property
+    def original_data(self) -> typing.Union[typing.Dict[str,typing.Any], typing.List[typing.Any]]:
         if not self._cached_orig_data:
             self._cached_orig_data = orjson.loads(self.original_file.read_bytes())
         return self._cached_orig_data
-
-    original_data = property(fget=_get_original_data)

@@ -5,15 +5,18 @@ import orjson
 from .RPGMVZBase import MVZFungler
 
 class CommonEventMVFungler(MVZFungler):
-    def __init__(self, file: pathlib.Path, config: dict) -> None:
-        super().__init__(file, config)
-
-    def create_maps(self, export_file: pathlib.Path):
+    fungler_type = "common_event"
+    def create_maps(self):
+        mapping = self.read_mapped(create=True)
+        if not mapping:
+            raise Exception("Mapping failed to create?")
+        mapping["events"] = {}
         mapping = {"type": "common_event", "events": {}}
-        events_list = orjson.loads(self.file.read_bytes())
+        if not isinstance(self.original_data, list):
+            raise Exception("Wrong type?")
         # events = []
         for idx, event in enumerate(
-            events_list,
+            self.original_data,
         ):
             if not event:
                 continue
@@ -27,16 +30,15 @@ class CommonEventMVFungler(MVZFungler):
             if page_list_events:
                 mapping["events"][str(idx)] = page_list_events
         if mapping["events"]:
-            export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+            self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
     def apply_maps(self, map_file: pathlib.Path):
-        old_map = orjson.loads(self.file.read_bytes())
-        mapping = orjson.loads(map_file.read_bytes())
-        if mapping.get("type", "") != "common_event":
-            print(
-                f"[ERR] Failed applying, {map_file.name} does not match required type."
-            )
-            return
+        mapping = self.read_mapped(create=False)
+        if not mapping:
+            raise Exception("Mapping failed to read?")
+        old_map = self.original_data
+        if not old_map or not isinstance(old_map, list):
+            raise Exception("original_data failed to read?")
         for idx, map_event in mapping["events"].items():
             for text_data in map_event:
                 if text_data["type"] == "text":
@@ -58,7 +60,7 @@ class CommonEventMVFungler(MVZFungler):
                     txt_event = old_map[int(idx)]["list"][zero_ptr]
                     txt_event["parameters"][0] = text_data["text"]
                     old_map[int(idx)]["list"][zero_ptr] = txt_event
-        return old_map
+        self.original_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
 
 
 class MapsMVFungler(MVZFungler):
@@ -170,11 +172,12 @@ class MapsMVFungler(MVZFungler):
                 for text_data in page:
                     pass
 
-    def create_maps(self, export_file: pathlib.Path):
+    def create_maps(self):
         mapping = {"type": "map", "name":"", "events": {}}
-        map_data = orjson.loads(self.file.read_bytes())
+        map_data = self.original_data
         # events = []
-
+        if not isinstance(map_data,dict):
+            raise Exception("Maps in wrong format?")
         for evidx, event in enumerate(
             map_data.get("events", []),
         ):
@@ -195,6 +198,6 @@ class MapsMVFungler(MVZFungler):
                 mapping["events"][str(evidx)] = pages
         mapping["name"] =  map_data["displayName"]
         if mapping["events"] or mapping["name"]:
-            export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+            self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         else:
-            print("No Exportable Events:", self.file.name)
+            print("No Exportable Events:", self.original_file.name)

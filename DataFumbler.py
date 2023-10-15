@@ -4,18 +4,18 @@
 # =================================================== #
 
 import pathlib
-import shutil
 import typing
 import typer
 import tomli
 import json
 import logging
-
-from DataFumblerUtils import get_folders, patch, extract, create_maps
-
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger("DF|Cmmd")
+
+# from DataFumblerUtils import get_folders, extract
+
+
 
 app = typer.Typer()
 
@@ -43,7 +43,7 @@ def mapping(game_exec: pathlib.Path, config: typing.Optional[pathlib.Path] = Non
             config_dict = tomli.loads(config.read_text(encoding="utf-8"))
         except tomli.TOMLDecodeError:
             raise Exception("Config Read Error. Decode Error.")
-    MVZHandler(game_exec, config_dict).extract(overwrite)
+    MVZHandler(game_exec, config_dict).create_maps(replace=overwrite)
 
 
 @app.command(name="export")
