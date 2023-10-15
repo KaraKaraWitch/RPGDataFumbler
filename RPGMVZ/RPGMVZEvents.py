@@ -4,8 +4,10 @@ import nestedtext
 import orjson
 from .RPGMVZBase import MVZFungler
 
+
 class CommonEventMVFungler(MVZFungler):
     fungler_type = "common_event"
+
     def create_maps(self):
         mapping = self.read_mapped(create=True)
         if not mapping:
@@ -30,9 +32,11 @@ class CommonEventMVFungler(MVZFungler):
             if page_list_events:
                 mapping["events"][str(idx)] = page_list_events
         if mapping["events"]:
-            self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+            self.mapped_file.write_bytes(
+                orjson.dumps(mapping, option=orjson.OPT_INDENT_2)
+            )
 
-    def apply_maps(self, map_file: pathlib.Path):
+    def apply_maps(self):
         mapping = self.read_mapped(create=False)
         if not mapping:
             raise Exception("Mapping failed to read?")
@@ -60,14 +64,22 @@ class CommonEventMVFungler(MVZFungler):
                     txt_event = old_map[int(idx)]["list"][zero_ptr]
                     txt_event["parameters"][0] = text_data["text"]
                     old_map[int(idx)]["list"][zero_ptr] = txt_event
-        self.original_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
+        self.original_file.write_bytes(
+            orjson.dumps(old_map, option=orjson.OPT_INDENT_2)
+        )
 
 
 class MapsMVFungler(MVZFungler):
+
+    fungler_type = "maps"
+
     def apply_maps(self, map_file: pathlib.Path):
-        old_map = orjson.loads(self.file.read_bytes())
-        mapping = orjson.loads(map_file.read_bytes())
-        
+        old_map = self.original_data
+        if not isinstance(old_map, dict):
+            raise Exception("Maps in wrong format?")
+        mapping = self.read_mapped()
+        if not mapping:
+            raise Exception("Mapping missing?")
         old_events = old_map["events"]
         for evnt_id, page_maps in mapping["events"].items():
             evnt_id = int(evnt_id)
@@ -116,18 +128,18 @@ class MapsMVFungler(MVZFungler):
                         ] = text_event
             old_events[evnt_id] = event_data
         old_map["events"] = old_events
-        return old_map
+        self.original_file.write_bytes(
+            orjson.dumps(old_map, option=orjson.OPT_INDENT_2)
+        )
+        return True
 
         # return super().apply_maps(map_file)
 
-    def export_map(self, map_file: pathlib.Path):
-        mapping = orjson.loads(map_file.read_bytes())
-        # return super().exports_maps(map_file)
-        if mapping.get("type", "") != "map":
-            print(
-                f"[ERR] Failed exporting, {map_file.name} does not match required type."
-            )
-            return
+    def export_map(self):
+        mapping = self.read_mapped()
+        if not mapping:
+            return False
+        # print(self.mapped_file)
         z = {}
         for evidx, event in mapping["events"].items():
             events = []
@@ -136,7 +148,7 @@ class MapsMVFungler(MVZFungler):
                     events.extend(text_data["text"])
                     events.append("<>")
             z[evidx] = events
-        return nestedtext.dumps(z)
+        self.export_file.write_text(nestedtext.dumps(z), encoding="utf-8")
 
     def import_map(self, translated_file: pathlib.Path, inter_json: pathlib.Path):
         try:
@@ -173,10 +185,13 @@ class MapsMVFungler(MVZFungler):
                     pass
 
     def create_maps(self):
-        mapping = {"type": "map", "name":"", "events": {}}
+        mapping = self.read_mapped(create=True)
+        if not mapping:
+            raise Exception("Mapping missing?")
+        mapping["events"] = {}
         map_data = self.original_data
         # events = []
-        if not isinstance(map_data,dict):
+        if not isinstance(map_data, dict):
             raise Exception("Maps in wrong format?")
         for evidx, event in enumerate(
             map_data.get("events", []),
@@ -196,8 +211,8 @@ class MapsMVFungler(MVZFungler):
 
             if pages:
                 mapping["events"][str(evidx)] = pages
-        mapping["name"] =  map_data["displayName"]
+        mapping["name"] = map_data["displayName"]
         if mapping["events"] or mapping["name"]:
-            self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
-        else:
-            print("No Exportable Events:", self.original_file.name)
+            self.mapped_file.write_bytes(
+                orjson.dumps(mapping, option=orjson.OPT_INDENT_2)
+            )

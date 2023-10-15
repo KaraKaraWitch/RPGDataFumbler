@@ -126,6 +126,8 @@ class SystemMVfungler(MVZFungler):
         self.read_mapped(create=True)
         mapping: typing.Dict[str, typing.Any] = {"type": self.fungler_type}
         system_data = self.original_data
+        if not isinstance(system_data, dict):
+            raise Exception("System not in right format.")
         if self.config["System"]["armor_types"]:
             mapping["armor_types"] = []
             for idx, armor in enumerate(system_data["armorTypes"]):
@@ -179,6 +181,8 @@ class SystemMVfungler(MVZFungler):
         if not mapping:
             return
         system_data = self.original_data
+        if not isinstance(system_data, dict):
+            raise Exception("System not in right format.")
         if self.config["System"]["armor_types"]:
             for idx, value in mapping["armor_types"]:
                 system_data["armorTypes"][idx] = value

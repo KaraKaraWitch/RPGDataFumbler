@@ -1,11 +1,10 @@
-
 import pathlib
 
 import orjson
 from .RPGMVZBase import MVZFungler
 
-class ClassesMVFungler(MVZFungler):
 
+class ClassesMVFungler(MVZFungler):
     def create_maps(self):
         mapping = {"type": "classes", "classes": {}}
         classes_data = orjson.loads(self.file.read_bytes())

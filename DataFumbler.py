@@ -9,12 +9,12 @@ import typer
 import tomli
 import json
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger("DF|Cmmd")
 
 # from DataFumblerUtils import get_folders, extract
-
 
 
 app = typer.Typer()
@@ -25,8 +25,12 @@ project_folder_name = "tl_workspace"
 
 
 @app.command(name="map")
-def mapping(game_exec: pathlib.Path, config: typing.Optional[pathlib.Path] = None, overwrite:bool=False):
-    
+def mapping(
+    game_exec: pathlib.Path,
+    config: typing.Optional[pathlib.Path] = None,
+    overwrite: bool = False,
+):
+
     if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
         raise FileNotFoundError("Expecting a game executable.")
 
@@ -50,9 +54,12 @@ def mapping(game_exec: pathlib.Path, config: typing.Optional[pathlib.Path] = Non
 def export_data(
     game_exec: pathlib.Path,
     config: typing.Optional[pathlib.Path] = None,
+    overwrite: bool = False,
 ):
+
     if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
         raise FileNotFoundError("Expecting a game executable.")
+
     if config:
         try:
             config_dict = tomli.loads(config.read_text(encoding="utf-8"))
@@ -66,11 +73,7 @@ def export_data(
             config_dict = tomli.loads(config.read_text(encoding="utf-8"))
         except tomli.TOMLDecodeError:
             raise Exception("Config Read Error. Decode Error.")
-        
-    game_type = config_dict["General"].get("type", "MV").upper()
-    folders_dict = get_folders(game_exec, game_type)
-    if folders_dict:
-        extract(folders_dict, config_dict)
+    MVZHandler(game_exec, config_dict).export(replace=overwrite)
 
 
 @app.command(name="apply")

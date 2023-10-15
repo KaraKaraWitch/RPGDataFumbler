@@ -2,6 +2,7 @@ import orjson
 from .RPGMVZBase import MVZFungler
 import nestedtext
 
+
 class ActorMVFungler(MVZFungler):
 
     fungler_type = "actors"
@@ -32,7 +33,9 @@ class ActorMVFungler(MVZFungler):
             actor["nickname"] = actor_data["nickname"]
             actor["profile"] = actor_data["profile"]
             export_actors.append(actor)
-        self.mapped_file.write_bytes(orjson.dumps(export_actors, option=orjson.OPT_INDENT_2))
+        self.mapped_file.write_bytes(
+            orjson.dumps(export_actors, option=orjson.OPT_INDENT_2)
+        )
         return True
 
     def create_maps(self):
@@ -61,5 +64,7 @@ class ActorMVFungler(MVZFungler):
         mapping = self.read_mapped(create=False)
         if not mapping:
             return
-        self.export_file.write_text(nestedtext.dumps(mapping["actors"]))
+        self.export_file.write_text(
+            nestedtext.dumps(mapping["actors"]), encoding="utf-8"
+        )
         return True

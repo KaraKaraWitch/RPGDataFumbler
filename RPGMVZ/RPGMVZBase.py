@@ -6,7 +6,13 @@ import orjson
 
 
 class MVZFungler:
-    def __init__(self, original_file: pathlib.Path, mapped_file:pathlib.Path, export_file:pathlib.Path, config: dict) -> None:
+    def __init__(
+        self,
+        original_file: pathlib.Path,
+        mapped_file: pathlib.Path,
+        export_file: pathlib.Path,
+        config: dict,
+    ) -> None:
         """Base class that implements MV Related classes.
 
         You will need to extend the following classes:
@@ -19,7 +25,7 @@ class MVZFungler:
 
         - export_map
         - import_map
-        
+
         Args:
             original_file (pathlib.Path): The Input file from the game.
             mapped_file (pathlib.Path): _description_
@@ -28,7 +34,7 @@ class MVZFungler:
         """
         self.original_file: pathlib.Path = original_file
         self.mapped_file: pathlib.Path = mapped_file
-        self.export_file: pathlib.Path = mapped_file
+        self.export_file: pathlib.Path = export_file
         self.config = config
         self.game_type = self.config["General"].get("type", "MV")
         self.logger = logging.getLogger("DF|MVZ")
@@ -75,15 +81,17 @@ class MVZFungler:
         """
         raise NotImplementedError()
 
-    def type_check(self, map_file:pathlib.Path, mapping:dict, type:str):
+    def type_check(self, map_file: pathlib.Path, mapping: dict, type: str):
         if mapping.get("type", "") != type:
             print(
                 f"[ERR] Failed applying, {map_file.name} does not match required type."
             )
             return False
         return True
-    
-    def read_mapped(self, create:bool=False) -> typing.Union[None, typing.Dict[str,typing.Any]]:
+
+    def read_mapped(
+        self, create: bool = False
+    ) -> typing.Union[None, typing.Dict[str, typing.Any]]:
         """Reads the mapped file into a dictionary.
 
         Additionally, it does a simple type check (That can be spoofed).
@@ -97,11 +105,14 @@ class MVZFungler:
         """
         if self.fungler_type is None:
             raise Exception(f"fungler_type is missing an inheritence.")
+        # self.logger.info(self.mapped_file)
         if self.mapped_file.exists():
             mapping = orjson.loads(self.mapped_file.read_bytes())
             if self.type_check(self.mapped_file, mapping, self.fungler_type):
+
                 return mapping
             else:
+                self.logger.error("Type Check failed")
                 return None
         else:
             if create:
@@ -182,9 +193,11 @@ class MVZFungler:
             elif page_data["code"] == 102:
                 process_code102(t_idx)
         return page_list_events
-    
+
     @property
-    def original_data(self) -> typing.Union[typing.Dict[str,typing.Any], typing.List[typing.Any]]:
+    def original_data(
+        self,
+    ) -> typing.Union[typing.Dict[str, typing.Any], typing.List[typing.Any]]:
         if not self._cached_orig_data:
             self._cached_orig_data = orjson.loads(self.original_file.read_bytes())
         return self._cached_orig_data
