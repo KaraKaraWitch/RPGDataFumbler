@@ -16,9 +16,6 @@ logger = logging.getLogger("DF|Util")
 
 app = typer.Typer()
 
-from DataFumblerMV import resolve_file
-
-project_folder_name = "tl_workspace"
 
 
 def get_folders(game_exec:pathlib.Path, game_type: str):

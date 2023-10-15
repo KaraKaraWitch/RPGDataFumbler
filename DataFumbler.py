@@ -19,13 +19,14 @@ logger = logging.getLogger("DF|Cmmd")
 
 app = typer.Typer()
 
-from DataFumblerMV import resolve_file
+from RPGMVZ import MVZHandler
 
 project_folder_name = "tl_workspace"
 
 
 @app.command(name="map")
-def mapping(game_exec: pathlib.Path, config: typing.Optional[pathlib.Path] = None):
+def mapping(game_exec: pathlib.Path, config: typing.Optional[pathlib.Path] = None, overwrite:bool=False):
+    
     if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
         raise FileNotFoundError("Expecting a game executable.")
 
@@ -42,12 +43,7 @@ def mapping(game_exec: pathlib.Path, config: typing.Optional[pathlib.Path] = Non
             config_dict = tomli.loads(config.read_text(encoding="utf-8"))
         except tomli.TOMLDecodeError:
             raise Exception("Config Read Error. Decode Error.")
-
-    game_type = config_dict["General"].get("type", "MV").upper()
-    folders_dict = get_folders(game_exec, game_type)
-    if folders_dict is None:
-        return
-    create_maps(folders_dict, config_dict)
+    MVZHandler(game_exec, config_dict).extract(overwrite)
 
 
 @app.command(name="export")

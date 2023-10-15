@@ -125,7 +125,7 @@ class SystemMVfungler(MVZFungler):
     def create_maps(self):
         self.read_mapped(create=True)
         mapping: typing.Dict[str, typing.Any] = {"type": self.fungler_type}
-        system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
+        system_data = self.original_data
         if self.config["System"]["armor_types"]:
             mapping["armor_types"] = []
             for idx, armor in enumerate(system_data["armorTypes"]):
@@ -172,14 +172,13 @@ class SystemMVfungler(MVZFungler):
                     )
                     mapping["terms"]["messages"][k] = terms.get(k, ["", ""])[1]
         mapping["game_title"] = system_data["gameTitle"]
-        export_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+        self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
     def apply_maps(self):
-        mapping = orjson.loads(map_file.read_text(encoding="utf-8"))
-        system_data = orjson.loads(self.file.read_text(encoding="utf-8"))
-        if not self.type_check(map_file, mapping, "system"):
+        mapping = self.read_mapped()
+        if not mapping:
             return
-
+        system_data = self.original_data
         if self.config["System"]["armor_types"]:
             for idx, value in mapping["armor_types"]:
                 system_data["armorTypes"][idx] = value
@@ -192,4 +191,4 @@ class SystemMVfungler(MVZFungler):
         if self.config["System"]["terms"]:
             system_data["terms"] = mapping["terms"]
         system_data["gameTitle"] = mapping["game_title"]
-        return system_data
+        self.original_file.write_bytes(orjson.dumps(system_data))
