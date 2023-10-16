@@ -36,7 +36,7 @@ class CommonEventMVFungler(MVZFungler):
                 orjson.dumps(mapping, option=orjson.OPT_INDENT_2)
             )
 
-    def apply_maps(self):
+    def apply_maps(self, patch_file: pathlib.Path):
         mapping = self.read_mapped(create=False)
         if not mapping:
             raise Exception("Mapping failed to read?")
@@ -64,16 +64,72 @@ class CommonEventMVFungler(MVZFungler):
                     txt_event = old_map[int(idx)]["list"][zero_ptr]
                     txt_event["parameters"][0] = text_data["text"]
                     old_map[int(idx)]["list"][zero_ptr] = txt_event
-        self.original_file.write_bytes(
-            orjson.dumps(old_map, option=orjson.OPT_INDENT_2)
-        )
+        patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
+
+    def export_map(self):
+        mapping = self.read_mapped()
+        if not mapping:
+            return False
+        # print(self.mapped_file)
+        z = {}
+        for evidx, event in mapping["events"].items():
+            events = []
+            for text_data in event:
+                events.extend(text_data["text"])
+                events.append("<>")
+            z[evidx] = events
+        self.export_file.write_text(nestedtext.dumps(z), encoding="utf-8")
+
+    def import_map(self):
+        mapping = self.read_mapped()
+        if mapping is None:
+            return
+        try:
+            raw_data = self.export_file.read_text("utf-8")
+            if raw_data == "{}":
+                return
+            nesttext_data = nestedtext.loads(raw_data)
+        except nestedtext.NestedTextError as e:
+            # self.logger.error(f"")
+            self.logger.error(
+                f"Unable to import CommonEventsMVFungler NestedText for file: {self.export_file.name}. {e}"
+            )
+            return
+        # We assume it is a map file.
+        if not isinstance(nesttext_data, dict):
+            self.logger.error(
+                "Unable to use CommonEventsMVFungler NestedText. Expecting dictionary."
+            )
+            return
+        parsed_events = {}
+        for event_idx, lines in nesttext_data.items():
+            reconstruct_events = []
+            event_data = []
+            for line in lines:
+                if line == "<>":
+                    reconstruct_events.append(event_data)
+                    event_data = []
+                else:
+                    event_data.append(line)
+            parsed_events[event_idx] = reconstruct_events
+        for k, map_events in mapping["events"].items():
+            if len(map_events) != len(parsed_events[k]):
+                self.logger.error(
+                    f"Mismatched key size: {k}. Expecting: {len(map_events)}. Got: {len(parsed_events[k])}"
+                )
+                return
+            for idx, event in enumerate(map_events):
+                event["text"] = parsed_events[k][idx]
+                map_events[idx] = event
+            mapping["events"][k] = map_events
+        self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
 
 class MapsMVFungler(MVZFungler):
 
     fungler_type = "maps"
 
-    def apply_maps(self, map_file: pathlib.Path):
+    def apply_maps(self, patch_file: pathlib.Path):
         old_map = self.original_data
         if not isinstance(old_map, dict):
             raise Exception("Maps in wrong format?")
@@ -128,9 +184,7 @@ class MapsMVFungler(MVZFungler):
                         ] = text_event
             old_events[evnt_id] = event_data
         old_map["events"] = old_events
-        self.original_file.write_bytes(
-            orjson.dumps(old_map, option=orjson.OPT_INDENT_2)
-        )
+        patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
         return True
 
         # return super().apply_maps(map_file)
@@ -150,25 +204,29 @@ class MapsMVFungler(MVZFungler):
             z[evidx] = events
         self.export_file.write_text(nestedtext.dumps(z), encoding="utf-8")
 
-    def import_map(self, translated_file: pathlib.Path, inter_json: pathlib.Path):
+    def import_map(self):
+        mapping = self.read_mapped()
+        if mapping is None:
+            return
         try:
-            map_data = nestedtext.loads(translated_file.read_text("utf-8"))
+            raw_data = self.export_file.read_text("utf-8")
+            if raw_data == "{}":
+                return
+            nesttext_data = nestedtext.loads(raw_data)
         except nestedtext.NestedTextError as e:
-            self.logger.error("Unable to import MapsMVFungler NestedText. {e}")
+            # self.logger.error(f"")
+            self.logger.error(
+                f"Unable to import MapsMVFungler NestedText for file: {self.export_file.name}. {e}"
+            )
             return
         # We assume it is a map file.
-        if not isinstance(map_data, dict):
+        if not isinstance(nesttext_data, dict):
             self.logger.error(
                 "Unable to use MapsMVFungler NestedText. Expecting dictionary."
             )
             return
-        mapping = orjson.loads(inter_json.read_bytes())
-        if mapping.get("type", "") != "map":
-            print(
-                f"[ERR] Failed exporting, {inter_json.name} does not match required type."
-            )
-            return
-        for event_idx, lines in map_data.items():
+        parsed_events = {}
+        for event_idx, lines in nesttext_data.items():
             reconstruct_events = []
             event_data = []
             for line in lines:
@@ -177,12 +235,34 @@ class MapsMVFungler(MVZFungler):
                     event_data = []
                 else:
                     event_data.append(line)
+            parsed_events[event_idx] = reconstruct_events
 
-        for evidx, event in mapping["events"].items():
-            events = []
-            for pgidx, page in event.items():
-                for text_data in page:
-                    pass
+        for evidx, map_event in mapping["events"].items():
+            events: list = parsed_events[evidx]
+            # idx = 0
+            for pgidx, page in map_event.items():
+                for idx, text_data in enumerate(page):
+                    if len(events[0]) != len(text_data["text"]):
+                        self.logger.error(
+                            "Mismatch import for events. Text data does not match reconstructed events"
+                        )
+                        self.logger.error(events[0])
+                        self.logger.error(text_data["text"])
+                        self.logger.error(self.export_file.name)
+                        return
+                    self.logger.debug(f"{text_data['text']} {events[0]}")
+                    text_data["text"] = events[0]
+                    events.pop(0)
+                    page[idx] = text_data
+                    # idx += 1
+                map_event[pgidx] = page
+            mapping["events"][evidx] = map_event
+            if len(events) != 0:
+                self.logger.error("Mismatch import for events.")
+                self.logger.error(len(events))
+                self.logger.error(self.export_file.name)
+                return
+        self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
     def create_maps(self):
         mapping = self.read_mapped(create=True)

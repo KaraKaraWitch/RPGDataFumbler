@@ -42,7 +42,7 @@ class MVZFungler:
 
     fungler_type = None
 
-    def apply_maps(self) -> bool:
+    def apply_maps(self, patch_file: pathlib.Path) -> bool:
         raise NotImplementedError()
 
     def export_map(self) -> bool:

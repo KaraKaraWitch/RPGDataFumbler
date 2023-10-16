@@ -176,7 +176,7 @@ class SystemMVfungler(MVZFungler):
         mapping["game_title"] = system_data["gameTitle"]
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
-    def apply_maps(self):
+    def apply_maps(self, patch_file: pathlib.Path):
         mapping = self.read_mapped()
         if not mapping:
             return
@@ -195,4 +195,4 @@ class SystemMVfungler(MVZFungler):
         if self.config["System"]["terms"]:
             system_data["terms"] = mapping["terms"]
         system_data["gameTitle"] = mapping["game_title"]
-        self.original_file.write_bytes(orjson.dumps(system_data))
+        patch_file.write_bytes(orjson.dumps(system_data, option=orjson.OPT_INDENT_2))

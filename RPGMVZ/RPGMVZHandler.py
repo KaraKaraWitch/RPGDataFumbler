@@ -117,6 +117,35 @@ class MVZHandler:
                 return SystemMVfungler(orig_file, map_file, export_file, self.config)
         # Events stuff
 
+    @property
+    def mapping_files(
+        self,
+    ) -> typing.Union[
+        typing.Generator[pathlib.Path, None, None], typing.List[pathlib.Path]
+    ]:
+        if not self.game_folder:
+            return []
+        tl_folder = self.game_folder["tl_root"] / "data"
+        for json_file in self.game_folder["data"].rglob("*.json"):
+            rel = json_file.relative_to(self.game_folder["data"])
+            map_file = tl_folder / rel
+            yield map_file
+
+    @property
+    def export_files(
+        self,
+    ) -> typing.Union[
+        typing.Generator[pathlib.Path, None, None], typing.List[pathlib.Path]
+    ]:
+        if not self.game_folder:
+            return []
+        export_folder = self.game_folder["export"] / "data"
+        # export_folder = export_folder / rel
+        for json_file in self.game_folder["data"].rglob("*.json"):
+            rel = json_file.relative_to(self.game_folder["data"])
+            export_file = (export_folder / rel).with_suffix(".nt.txt")
+            yield export_file
+
     def create_maps(self, replace: bool = False):
         # folders:typing.Dict[str, pathlib.Path], config_dict
         if not self.game_folder:
@@ -127,7 +156,7 @@ class MVZHandler:
             rel = json_file.relative_to(self.game_folder["data"])
 
             map_file = tl_folder / rel
-            export_file = export_folder / rel
+            export_file = (export_folder / rel).with_suffix(".nt.txt")
             cls = self.resolve_file(json_file, map_file, export_file)
             if cls:
                 self.logger.debug(f"Dumping: {rel.name}")
@@ -185,5 +214,68 @@ class MVZHandler:
                         (export_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                     try:
                         cls.export_map()
+                    except NotImplementedError:
+                        self.logger.warning(f"TODO: {rel.name}")
+
+    def import_maps(self):
+        """imports the translatable components into the project folder"""
+        if not self.game_folder:
+            return
+        tl_folder = self.game_folder["tl_root"] / "data"
+        export_folder = self.game_folder["export"] / "data"
+        for json_file in self.game_folder["data"].rglob("*.json"):
+            rel = json_file.relative_to(self.game_folder["data"])
+
+            map_file = tl_folder / rel
+            export_file: pathlib.Path = export_folder / rel
+            export_file = export_file.with_suffix(".nt.txt")
+            cls = self.resolve_file(json_file, map_file, export_file)
+            if cls:
+                if (export_file).exists():
+                    try:
+                        cls.import_map()
+                    except NotImplementedError:
+                        self.logger.warning(f"TODO: {rel.name}")
+
+    def patch(self):
+        """Patches a game.
+
+        To be more precise, it creates a copy of the entire game directory and then patches over it.
+
+        This is to ensure that the original game being translated doesn't get overwritten by it.
+        """
+
+        if not self.game_folder:
+            return
+        tl_folder: pathlib.Path = self.game_folder["tl_root"] / "data"
+        patched_folder: pathlib.Path = self.game_folder["patch"].resolve()
+        export_folder = self.game_folder["export"] / "data"
+        # if not patched_folder.exists():
+        #     patched_folder.mkdir(exist_ok=True,parents=True)
+        # for item in self.game_file.resolve().parent.iterdir():
+        #     if item.is_dir() and item != tl_folder.resolve():
+        #         self.logger.info(f"Copy folder: {item.name}")
+        #         shutil.copytree(item, patched_folder / item.name)
+        #     elif item.is_file():
+        #         shutil.copy(item, patched_folder / item.name)
+        data_rel = (
+            self.game_folder["data"]
+            .resolve()
+            .relative_to(self.game_file.parent.resolve())
+        )
+        for json_file in self.game_folder["data"].rglob("*.json"):
+            rel = json_file.relative_to(self.game_folder["data"])
+
+            map_file = tl_folder / rel
+            export_file: pathlib.Path = export_folder / rel
+            export_file = export_file.with_suffix(".nt.txt")
+            patch_file = patched_folder / data_rel / rel
+            # print(patch_file)
+            cls = self.resolve_file(json_file, map_file, export_file)
+            print(patch_file, "patching", map_file)
+            if cls:
+                if map_file.exists():
+                    try:
+                        cls.apply_maps(patch_file)
                     except NotImplementedError:
                         self.logger.warning(f"TODO: {rel.name}")
