@@ -119,6 +119,11 @@ class CommonEventMVFungler(MVZFungler):
                 )
                 return
             for idx, event in enumerate(map_events):
+                if len(event["text"]) != len(parsed_events[k][idx]):
+                    self.logger.error(
+                        f"Mismatched key size: {event}. Expecting: {len(event['text'])}. Got: {len(parsed_events[k][idx])}"
+                    )
+                    return
                 event["text"] = parsed_events[k][idx]
                 map_events[idx] = event
             mapping["events"][k] = map_events

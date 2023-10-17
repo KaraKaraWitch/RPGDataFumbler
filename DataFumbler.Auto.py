@@ -22,39 +22,13 @@ import typer
 import tomli
 import nestedtext
 from RPGMVZ import MVZHandler
+from AutoFumbler import AFMTool
 
 
-class LanguageModel:
-    def __init__(self, **kwargs) -> None:
-        pass
-
-    def batch_translate(self, text: list):
-        """Runs a batch translation over a list of text.
-
-        Args:
-            text (list): A list of strings to be translated.
-
-        Raises:
-            NotImplementedError: The class does not support batch_translate as a function.
-        """
-        raise NotImplementedError()
-
-    def translate(self, text: str):
-        """Runs a translation over text.
-
-        Args:
-            text (str): A string to be translated.
-
-        Raises:
-            NotImplementedError: The class does not support batch_translate as a function.
-        """
-        raise NotImplementedError()
-
-    def configure(self, **kwargs):
-        raise NotImplementedError()
 
 
-class Googled(LanguageModel):
+
+class Googled:
     def __init__(self, **kwargs) -> None:
         try:
             from translatepy.translators.google import GoogleTranslate
@@ -85,57 +59,13 @@ class Googled(LanguageModel):
         # return super().translate(text)
 
 
-class OpenAI(LanguageModel):
-    pass
 
 
-class MToolMapped(LanguageModel):
-    def __init__(self, **kwargs) -> None:
-        self.translated_data = orjson.loads(
-            pathlib.Path(kwargs["manualTransFile"]).read_bytes()
-        )
-        self.per_line = kwargs.get("per_line", True)
 
-    def batch_translate(self, text: list):
-        """Runs a batch translation over a list of text.
 
-        MTool sometimes translates
-
-        Args:
-            text (list): A list of strings to be translated.
-
-        Raises:
-            NotImplementedError: The class does not support batch_translate as a function.
-        """
-        results = []
-        composite = "\n".join(text)
-        composite_result = self.translated_data.get(composite, composite)
-        if self.per_line:
-            # For some MTool translators, it does not like new lines.
-            for line in text:
-                results.append(self.translated_data.get(line, line))
-        else:
-            return composite_result
-        return results
-
-    def translate(self, text):
-        return self.translated_data.get(text, text)
 
 
 app = typer.Typer()
-
-
-class Services(enum.Enum):
-
-    GOOGLE = "Google"
-    MTOOL = "MTool"
-
-
-class ServicesMapping(enum.Enum):
-
-    GOOGLE = Googled
-    MTOOL = MToolMapped
-
 
 @app.command(name="MTool")
 def mtool_translate(
@@ -202,73 +132,16 @@ def mtool_translate(
                 except nestedtext.NestedTextError as e:
                     print(f"[NestedTextError]: {e}")
                     continue
-                for key, event_data in map_events.items():
-                    for idx, orig_line in enumerate(event_data):
-
-                        # skip empty lines
-                        if orig_line == "<>":
-                            continue
-                        if not orig_line:
-                            continue
-                        # Skip Non-Japanese lines.
-                        if not jp_rgx.search(orig_line):
-                            # print("JPRGX", orig_line)
-                            continue
-                        print(idx, orig_line)
-                        # Check for MTool undesirables.
-
-                        # Check if quotes are wrapped.
-                        braces_in = orig_line.count("「")
-                        braces_out = orig_line.count("」")
-                        if (braces_in != braces_out) and braces_in > 0:
-                            print("Braces")
-                            continue
-
-                        # Skip lines with varying punctuations.
-                        # MTool seems to dislike it.
-
-                        if orig_line.count("。") > 1:
-                            # print("Puncts 1")
-                            continue
-                        # Exclaimation
-                        collapesed = (
-                            orig_line.replace("！", "*")
-                            .replace("？", "*")
-                            .replace("。", "*")
-                        )
-                        punct_exclaims = [i for i in collapesed.split("*") if i]
-                        if len(punct_exclaims) > 1:
-                            # print("Puncts 2")
-                            continue
-
-                        # Get the translation
-                        translated = translator_instance.translate(orig_line)
-                        # Skip same text.
-                        if orig_line == translated:
-                            # print("Orgline same as TL")
-                            continue
-
-                        # Check for translation length, if it is too short, it doesn't get replaced.
-                        if len(translated) < len(orig_line) * 1.5:
-                            if not len(orig_line) < 10:
-                                continue
-                                # It's probably worth keeping
-
-                            # print("SizeScaling")
-                            # continue
-                        # print(event_data[idx], translated, orig_line)
-                        event_data[idx] = translated
-                    map_events[key] = event_data
                 file.write_text(nestedtext.dumps(map_events), encoding="utf-8")
 
 
 @app.command("Google")
-def do_translate(
+def google_translator(
     game_exec: pathlib.Path,
     service: Services,
     config: typing.Optional[pathlib.Path] = None,
 ):
-    pass
+    
 
 
 if __name__ == "__main__":

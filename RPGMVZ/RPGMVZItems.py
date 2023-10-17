@@ -91,7 +91,7 @@ class ItemMVFungler(MVZFungler):
                 name, desc, note = packed
             except Exception:
                 self.logger.error(
-                    f"Unable to import NestedText for Items: {self.export_file.name}, Mismatch packed sizes."
+                    f"Unable to import NestedText for Items: {self.export_file.name}, Mismatch packed sizes for: {packed}"
                 )
                 return False
             mapping["item"][weapon_idx_s]["name"] = name
