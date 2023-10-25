@@ -113,7 +113,7 @@ def mtool_translate(
         print(f"Unable to find ManualTransFile.json @ {mantransfile}")
         return
     translator_instance = MToolMapped(manualTransFile=mantransfile)
-    jp_rgx = re.compile(r"[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+", flags=re.UNICODE)
+    
 
     # translator_instance:LanguageModel = getattr(ServicesMapping, service.name).value()
     # print(list())

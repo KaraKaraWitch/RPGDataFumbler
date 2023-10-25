@@ -17,3 +17,15 @@ Because I hate MTool.
   - MV
   - MZ
 
+## AutoFumbler (DataFumbler.Auto.py)
+
+Supported "Translators"
+
+- MTool (See notes below)
+- Google
+- DeepL
+- MBart ("Offline" MBart Translation)
+
+### Notes
+
+- *MTool translations is not usable as-is when running scripts. Consider additionally using other translations in tandem or ditching Mtool entirely.*

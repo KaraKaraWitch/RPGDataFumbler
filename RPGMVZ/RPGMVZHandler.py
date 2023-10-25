@@ -234,6 +234,10 @@ class MVZHandler:
                 if (export_file).exists():
                     try:
                         cls.import_map()
+                        orig_export = export_file.with_suffix(".ORIG.nt.txt")
+                        if export_file.exists() and not orig_export.exists():
+                            self.logger.info("Creating original copy...")
+                            shutil.copy(export_file, orig_export)
                     except NotImplementedError:
                         self.logger.warning(f"TODO: {rel.name}")
 
