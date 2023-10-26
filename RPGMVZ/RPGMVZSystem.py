@@ -175,6 +175,13 @@ class SystemMVfungler(MVZFungler):
                         f'[SystemCommon|Messages] Found common term for: {mapping["terms"]["messages"][k]}'
                     )
                     mapping["terms"]["messages"][k] = terms.get(k, ["", ""])[1]
+        if self.config["System"]["variables"]:
+            self.logger.warning("Exporting variables for system, translating variables may cause breakage!")
+            mapping["variables"] = {}
+            for idx, var_value in enumerate(system_data["variables"]):
+                if var_value:
+                    mapping["variables"][str(idx)] = var_value
+
         mapping["game_title"] = system_data["gameTitle"]
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 

@@ -164,18 +164,19 @@ class MVZFungler:
             link_words = page_data["parameters"][0]
             text_data = {"type": "text_choice", "text": [], "pointer": []}
             if self.game_type == "MZ":
+                # MZ appears to no need processing for 102 codes...
                 bse_event = page_list_data[base_i]
                 text_data["text"] = bse_event["parameters"][0]
                 text_data["pointer"] = base_i
                 page_list_events.append(text_data)
             else:
-                # MZ appears to no need processing for 102 codes...
+                
                 pointer = base_i + 1
                 nx_event = page_list_data[pointer]
                 nx_code = nx_event["code"]
                 text_data["pointer"].append(base_i)
                 while len(link_words) > 0 and pointer < t_pages:
-                    if nx_code == 402:
+                    if nx_code == 402 and nx_event["parameters"][1] == link_words[0]:
                         text_data["text"].append(nx_event["parameters"][1])
                         text_data["pointer"].append(pointer)
                         link_words.pop(0)
@@ -184,6 +185,8 @@ class MVZFungler:
                         break
                     nx_event = page_list_data[pointer]
                     nx_code = nx_event["code"]
+                if len(link_words) > 0:
+                    self.logger.warning(f"trailing link_words. Report to Github.")
                 page_list_events.append(text_data)
 
         for t_idx in range(t_pages):
