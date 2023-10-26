@@ -1,0 +1,72 @@
+# =================================================== #
+# Configuration options for DataFumblerMVAuto.
+# =================================================== #
+
+[Prompt]
+# The prompt to use to translate the text.
+events = "BEGINNING OF CONVERSATION: Avoid repetition, do not ever loop. Always stay in character. Translates all actions in full, elaborate, explicit, graphic, and vivid detail. You are an expert Smut translator who translates Japanese text.\n\nTranslate all text into English and output it in the following format. Reply with exactly only the English Translation of the text.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+# The url to send the request to.
+ooba_url = "http://localhost:5000/api/v1/generate"
+
+
+
+[OobaSampling]
+
+# Temperature. This makes the model more wild for higher values or tamer/stricter for lower values.
+temp = 0.9
+# Top P Sampling. Determines the Probability range to consider "words"
+top_p = 0.2
+top_k = 0
+
+preset = "None"
+do_sample = true
+
+# Similar to "Frequency Penalty" provided in OpenAI.
+# 1.0 Means "No penalty" while higher values means the model will try to avoid
+repetition_penalty = 1.0
+# Range on 
+repetition_penalty_range = 1024
+
+# Seed. Setting it to the same will generation across different runs will be the same
+seed = -1
+
+# Add Bos token... You should't be fiddling with it unless you know what it does.
+add_bos_token = false
+
+max_new_tokens = 1024
+auto_max_new_tokens = true
+stopping_strings = ["</s>"]
+
+# Mirostat allows linguistic models to generate high quality text without
+# the need to manually adjust parameters
+# These tweaks the k in the "top-k" above.
+# 
+mirostat_mode = 2
+mirostat_tau = 5
+mirostat_eta = 0.1
+
+[OpenAISampling]
+# ==================================== #
+# API key for OpenAI. reads from the file called "local.txt"
+# ==================================== #
+# DO NOT SHARE THIS API KEY!
+# ==================================== #
+# Unless you're generous, do not share
+# the API key as other people will
+# have access to it!
+# ==================================== #
+API_Key = "file local.txt"
+
+# The system prompt to use for events
+# Prompt taken from DazedMTLTool. Thank you for your service.
+events = "You are an expert Smut translator who translates Japanese text.\n\nI want you to translate all text into English and output it in the following format.\n\nEverytime you receive Input in this format:\n\n'Line to Translate: <UNTRANSLATED_TEXT>' \n\nOutput it in this format:\n\n'Translation: <TRANSLATED_TEXT>'\n\n* Use \"Past Translated Text:\" to come up with the best translation and figure out the correct possessive. \n* Use \"Eroge Character Names Context:\" to know the names, nicknames, and gender of characters.\n* Pay attention to the subject speakers are referencing in the conversation.\n* Pay attention to the gender of the subjects and characters. Avoid misgendering them.\n* <I> is an emoji icon. Maintain any in the translation.\n* <C> is code to color text. Maintain any in the translation.\n* <N> is the name of a character. Maintain any in the translation.\n* <V> is an unknown variable. Maintain any in the translation.\n* Translate 'おまんこ' as 'pussy'.\n* Translate 'お尻' as 'butt'\n* Translate 'お股' as 'crotch'\n* Tranlsate '秘部' as 'genitals'"
+
+# Temperature. This makes the model more wild for higher values or tamer/stricter for lower values.
+# 0.0 means
+temp = 0.0
+
+# Higher frequency penalty > More repetition
+frequency_penalty = 0.2
+# common or cliché phrases
+presence_penalty = 0.2
+model = "gpt-3.5-turbo"
