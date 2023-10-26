@@ -70,8 +70,6 @@ app = typer.Typer()
 @app.command(name="MTool")
 def mtool_translate(
     game_exec: pathlib.Path,
-    config: typing.Optional[pathlib.Path] = None,
-    bypass_multiline: bool = False,
     events: bool = True,
     weapons: bool = True,
     armor: bool = True,
@@ -89,59 +87,67 @@ def mtool_translate(
         "Use the flag: --bypass-multiline to disable detection for multiline sectiion",
         fg="red",
     )
-    tl_events = events
     if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
         raise FileNotFoundError("Expecting a game executable.")
 
-    if config:
-        try:
-            config_dict = tomli.loads(config.read_text(encoding="utf-8"))
-        except tomli.TOMLDecodeError:
-            raise Exception("Config Read Error. Decode Error.")
-    else:
-        config = game_exec.resolve().parent / "DataFumbler.toml"
-        if not config.exists():
-            raise Exception("Config Read Error. Config not found.")
-        try:
-            config_dict = tomli.loads(config.read_text(encoding="utf-8"))
-        except tomli.TOMLDecodeError:
-            raise Exception("Config Read Error. Decode Error.")
+    config = game_exec.resolve().parent / "DataFumbler.toml"
+    if not config.exists():
+        raise Exception("Config Read Error. Config not found.")
+    try:
+        config_dict = tomli.loads(config.read_text(encoding="utf-8"))
+    except tomli.TOMLDecodeError:
+        raise Exception("Config Read Error. Decode Error.")
 
     handler = MVZHandler(game_exec, config_dict)
     mantransfile = game_exec.parent / "ManualTransFile.json"
     if not mantransfile.exists():
         print(f"Unable to find ManualTransFile.json @ {mantransfile}")
         return
-    translator_instance = MToolMapped(manualTransFile=mantransfile)
     
+    from .AutoFumbler.AFMTool import MToolTranslator
 
-    # translator_instance:LanguageModel = getattr(ServicesMapping, service.name).value()
-    # print(list())
-    # terminals = "？！"
-    for file in handler.export_files:
-        if not file.exists():
-            continue
-        fn = file.name.lower()
-        if "map" in fn or "commonevents" in fn:
-            if tl_events:
-                print(f"Translating: {file.name}")
-                try:
-                    map_events: typing.Dict[str, typing.List[str]] = nestedtext.loads(
-                        file.read_text(encoding="utf-8")
-                    )
-                except nestedtext.NestedTextError as e:
-                    print(f"[NestedTextError]: {e}")
-                    continue
-                file.write_text(nestedtext.dumps(map_events), encoding="utf-8")
+    instance = MToolTranslator(mantransfile)
+    instance.translate_exports(handler.export_files,events, weapons, armor, items, actors)
 
 
-@app.command("Google")
-def google_translator(
+@app.command("Ooba")
+def Ooba_translator(
     game_exec: pathlib.Path,
-    service: Services,
-    config: typing.Optional[pathlib.Path] = None,
+    events: bool = True,
+    weapons: bool = True,
+    armor: bool = True,
+    items: bool = True,
+    actors: bool = True,
 ):
+    if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
+        raise FileNotFoundError("Expecting a game executable.")
+
+    config = game_exec.resolve().parent / "DataFumbler.toml"
+    config_auto = game_exec.resolve().parent / "DataFumblerAuto.toml"
+    if not config.exists():
+        raise Exception("Config Read Error. Config not found.")
+    if not config_auto.exists():
+        raise Exception("ooba needs a DataFumblerAuto.toml with a \"prompt\" written inside it.")
+    try:
+        config_dict = tomli.loads(config.read_text(encoding="utf-8"))
+    except tomli.TOMLDecodeError:
+        raise Exception("Config Read Error. Decode Error.")
     
+    try:
+        config_auto_dict = tomli.loads(config_auto.read_text(encoding="utf-8"))
+    except tomli.TOMLDecodeError:
+        raise Exception("ConfigAuto Read Error. Decode Error.")
+    
+    handler = MVZHandler(game_exec, config_dict)
+
+    from AutoFumbler.AFooba import OobaModel
+
+    if "Prompt" not in config_auto_dict or "events" not in config_auto_dict["Prompt"]:
+        raise Exception("ConfigAuto Is missing either events or prompt file.")
+
+    model = OobaModel(config_auto_dict["Prompt"]["events"])
+    model.translate_exports(handler.export_files, events,weapons, armor, items, actors)
+
 
 
 if __name__ == "__main__":

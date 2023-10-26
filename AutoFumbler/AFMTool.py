@@ -103,3 +103,4 @@ class MToolTranslator:
                 continue
             filename = file.name.lower()
             if ("map" in filename or "commonevents" in filename) and events:
+                pass

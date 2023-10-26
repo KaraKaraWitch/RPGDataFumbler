@@ -214,6 +214,10 @@ class MVZHandler:
                         (export_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                     try:
                         cls.export_map()
+                        orig_export = export_file.with_suffix(".ORIG.nt.txt")
+                        if export_file.exists() and not orig_export.exists():
+                            self.logger.info("Creating original copy...")
+                            shutil.copy(export_file, orig_export)
                     except NotImplementedError:
                         self.logger.warning(f"TODO: {rel.name}")
 
@@ -234,34 +238,40 @@ class MVZHandler:
                 if (export_file).exists():
                     try:
                         cls.import_map()
-                        orig_export = export_file.with_suffix(".ORIG.nt.txt")
-                        if export_file.exists() and not orig_export.exists():
-                            self.logger.info("Creating original copy...")
-                            shutil.copy(export_file, orig_export)
                     except NotImplementedError:
                         self.logger.warning(f"TODO: {rel.name}")
 
-    def patch(self):
+    def patch(self, skip_copy:bool=True):
         """Patches a game.
 
         To be more precise, it creates a copy of the entire game directory and then patches over it.
 
-        This is to ensure that the original game being translated doesn't get overwritten by it.
+        This ensures that the original game being translated doesn't get overwritten by it.
         """
+
+        
 
         if not self.game_folder:
             return
         tl_folder: pathlib.Path = self.game_folder["tl_root"] / "data"
         patched_folder: pathlib.Path = self.game_folder["patch"].resolve()
+        do_copy = False
+        if not patched_folder.is_dir() or not skip_copy:
+            do_copy = True
+        if do_copy:
+            if not self.game_folder["patch"].is_dir():
+                self.game_folder["patch"].mkdir(parents=True, exist_ok=True)
+            for item in self.game_file.parent.iterdir():
+                if item.resolve() == self.game_folder["tl_root"]:
+                    continue
+                if item.is_file():
+                    rel = item.relative_to(self.game_file.parent)
+                    shutil.copy(item, self.game_folder["patch"] / rel)
+                elif item.is_dir():
+                    rel = item.relative_to(self.game_file.parent)
+                    shutil.copytree(item, self.game_folder["patch"] / rel)
+
         export_folder = self.game_folder["export"] / "data"
-        # if not patched_folder.exists():
-        #     patched_folder.mkdir(exist_ok=True,parents=True)
-        # for item in self.game_file.resolve().parent.iterdir():
-        #     if item.is_dir() and item != tl_folder.resolve():
-        #         self.logger.info(f"Copy folder: {item.name}")
-        #         shutil.copytree(item, patched_folder / item.name)
-        #     elif item.is_file():
-        #         shutil.copy(item, patched_folder / item.name)
         data_rel = (
             self.game_folder["data"]
             .resolve()
@@ -283,3 +293,16 @@ class MVZHandler:
                         cls.apply_maps(patch_file)
                     except NotImplementedError:
                         self.logger.warning(f"TODO: {rel.name}")
+        script_rel = (
+            self.game_folder["scripts"]
+            .resolve()
+            .relative_to(self.game_file.parent.resolve())
+        )
+        for script_file in self.game_folder["scripts"].rglob("*.js"):
+            rel = script_file.relative_to(self.game_folder["scripts"])
+            nsp = self.game_folder["tl_root"] / "script" / rel
+            patch_file = patched_folder / script_rel / rel
+            # print(patch_file, nsp)
+            if patch_file.exists():
+                patch_file.unlink()
+            shutil.copy(nsp, patch_file)

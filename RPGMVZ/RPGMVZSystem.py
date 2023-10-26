@@ -104,6 +104,8 @@ terms_patch = {
         "obtainExp": ["%1 の%2を獲得！", "%1 %2 received!"],
         "obtainGold": ["お金を %1\\G 手に入れた！", "%1\\G found!"],
         "obtainItem": ["%1を手に入れた！", "%1 found!"],
+        # Commented out alternative version, will need more testing.
+        # "obtainItem": [" %1 を 手に入れた！", "%1 found!"],
         "obtainSkill": ["%1を覚えた！", "%1 learned!"],
         "partyName": ["%1たち", "%1's Party"],
         "possession": ["持っている数", "Possession"],

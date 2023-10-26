@@ -14,8 +14,6 @@ logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger("DF|Cmmd")
 
-# from DataFumblerUtils import get_folders, extract
-
 
 app = typer.Typer()
 
