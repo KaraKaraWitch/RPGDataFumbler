@@ -31,12 +31,11 @@ class OobaModel(AutoTranslator):
                 diags_concat = "\n\n".join(c_dialogues)
                 if not diags_concat.strip():
                     continue
-                dc = self.prompt.replace("{dialogues}",diags_concat)
+                dc = self.prompt["events"].replace("{dialogues}",diags_concat)
                 request = {
                     'prompt': dc,
                     'max_new_tokens': 1024,
                     'auto_max_new_tokens': True,
-                    # 'max_tokens_second': 0,
                     'preset': 'None',
                     'do_sample': True,
                     'temperature': self.prompt.get("temp", 0.2),
@@ -53,7 +52,8 @@ class OobaModel(AutoTranslator):
                 }
                 rich.print(request)
                 # print(dc)
-                r = session.post("http://localhost:5000/api/v1/generate", json=request, timeout=None)
+                session_url = self.prompt["ooba_url"]
+                r = session.post(session_url, json=request, timeout=None)
                 print(dc + r.json()["results"][0]["text"])
                 t_buffer += dc + r.json()["results"][0]["text"] + "---\n"
             final[str(event_id)] = t_buffer

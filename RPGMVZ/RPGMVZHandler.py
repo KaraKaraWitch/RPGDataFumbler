@@ -191,7 +191,7 @@ class MVZHandler:
         # Marking folder / I hope someone doesn't delete this...
         (self.game_folder["tl_root"] / ".TLPROJECT").touch()
 
-    def export(self, replace: bool = False):
+    def export(self, replace: bool = False,format:str="nested"):
         """Exports the translatable components into the project folder"""
         if not self.game_folder:
             return
@@ -213,11 +213,13 @@ class MVZHandler:
                     if not (export_folder / rel).parent.exists():
                         (export_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                     try:
-                        cls.export_map()
-                        orig_export = export_file.with_suffix(".ORIG.nt.txt")
-                        if export_file.exists() and not orig_export.exists():
-                            self.logger.info("Creating original copy...")
-                            shutil.copy(export_file, orig_export)
+                        if map_file.exists():
+                            cls.export_map()
+                            if format == "nested":
+                                orig_export = export_file.with_suffix(".ORIG.nt.txt")
+                                if export_file.exists() and not orig_export.exists():
+                                    self.logger.info("Creating original copy...")
+                                    shutil.copy(export_file, orig_export)
                     except NotImplementedError:
                         self.logger.warning(f"TODO: {rel.name}")
 

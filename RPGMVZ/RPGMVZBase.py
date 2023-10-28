@@ -1,8 +1,15 @@
 import logging
 import pathlib
+import re
 import typing
+import nestedtext
 
 import orjson
+
+try:
+    import pandas
+except ImportError:
+    pandas = None
 
 
 class MVZFungler:
@@ -45,8 +52,30 @@ class MVZFungler:
     def apply_maps(self, patch_file: pathlib.Path) -> bool:
         raise NotImplementedError()
 
-    def export_map(self) -> bool:
-        """Exports the map fil
+    def create_maps(self) -> bool:
+        """Creates the mapping dictionary and writes it to the file specified for mapping.
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            bool: _description_
+        """
+        raise NotImplementedError()
+
+    def import_map(self, format="nested") -> bool:
+        """Imports the data from "exported" file.
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            bool: _description_
+        """
+        raise NotImplementedError()
+
+    def export_map(self, format="nested") -> bool:
+        """Exports the mapped data to a more human readable format.
 
         Args:
             map_file (pathlib.Path): _description_
@@ -59,27 +88,86 @@ class MVZFungler:
         """
         raise NotImplementedError()
 
-    def create_maps(self) -> bool:
-        """Creates the mapping file and writes it the
+    def export_excel(self, values: typing.Dict[str, typing.List[str]]) -> bool:
+        """Exports the file to an Excel Sheet
+
+        Args:
+            values (typing.Dict[str, typing.List[str]]): A list of values to use
 
         Raises:
-            NotImplementedError: _description_
-
-        Returns:
-            bool: _description_
+            ImportError: _description_
         """
-        raise NotImplementedError()
+        if not pandas:
+            raise ImportError(
+                "export_excel needs `pandas` and `XlsxWriter` to be installed."
+            )
+        with pandas.ExcelWriter(
+            str(self.export_file),
+        ) as writer:
+            for sheet_name, list_values in values.items():
+                formatted = {
+                    "Original": list_values,
+                    "Inital": [],
+                    "Edited": [],
+                    "Final": [],
+                }
+                pandas.DataFrame(formatted).to_excel(writer, sheet_name=sheet_name)
+        return True
 
-    def import_map(self) -> bool:
-        """Imports the data from "exported" file.
+    def export_nested(
+        self,
+        value: typing.Union[
+            typing.Dict[typing.Any, typing.Any], typing.List[typing.Any]
+        ],
+    ) -> bool:
+        self.export_file.write_text(nestedtext.dumps(value), encoding="utf-8")
+        return True
 
-        Raises:
-            NotImplementedError: _description_
+    def import_nested(self, type_shed: typing.Type) -> typing.Optional[typing.Any]:
+        try:
+            raw_data = self.export_file.read_text("utf-8")
+            if raw_data == "{}":
+                return False
+            data = nestedtext.loads(raw_data)
+            if not isinstance(data, type_shed):
+                self.logger.error(
+                    f"Unable to import NestedText for file: {self.export_file.name}. Invalid Type Check"
+                )
+                return None
+            return data
 
-        Returns:
-            bool: _description_
-        """
-        raise NotImplementedError()
+        except nestedtext.NestedTextError as e:
+            # self.logger.error(f"")
+            self.logger.error(
+                f"Unable to import NestedText for file: {self.export_file.name}. {e}"
+            )
+            return None
+
+    def import_excel(self, type_shed: typing.Type) -> typing.Optional[typing.Any]:
+        if not pandas:
+            raise ImportError("import_excel needs `pandas` to be installed.")
+        data = {}
+        for sheet_name, data_frame in pandas.read_excel(
+            self.export_file, sheet_name=None
+        ).items():
+            data[sheet_name] = []
+            for idx, row in data_frame.iterrows():
+                text_value = None
+                if row["Final"]:
+                    text_value = row["Final"]
+                elif row["Edited"]:
+                    text_value = row["Final"]
+                elif row["Inital"]:
+                    text_value = row["Inital"]
+                elif row["Original"]:
+                    text_value = row["Original"]
+                data[sheet_name].append(text_value)
+        if not isinstance(data, type_shed):
+            self.logger.error(
+                f"Unable to import xlsx for file: {self.export_file.name}. Invalid Type Check"
+            )
+            return None
+        return data
 
     def type_check(self, map_file: pathlib.Path, mapping: dict, type: str):
         if mapping.get("type", "") != type:
@@ -129,6 +217,56 @@ class MVZFungler:
         """
         page_list_events = []
         t_pages = len(page_list_data)
+        do_dtext = self.config.get("Events", {}).get("dtext", False)
+        dtext_rgx = re.compile(r"D_TEXT (.+) (\d+)")
+
+        def process_code356(base_i):
+            event = page_list_data[base_i]
+            if do_dtext:
+                if len(event["parameters"]) > 1:
+                    return
+                event_param = event["parameters"][0]
+                d_text_check = event_param.startswith(
+                    "D_TEXT"
+                ) and not event_param.startswith("D_TEXT_SETTING")
+                if not d_text_check:
+                    return
+                dtext_param = event["parameters"][0]
+                fi = dtext_rgx.findall(dtext_param)
+                if not fi:
+                    raise Exception("Regex failed to match DText")
+                text_data = {
+                    "type": "d_text",
+                    "text": [fi[0][0]],
+                    "pointer": [base_i],
+                    "meta": dtext_rgx.sub(f"D_TEXT {{DTEXT}} {fi[0][1]}", dtext_param),
+                }
+
+                page_list_events.append(text_data)
+
+        var_122 = self.config.get("Events", {}).get("code_122", [])
+
+        def process_code122(base_i):
+            if not var_122:
+                return
+            event = page_list_data[base_i]
+
+            # Sanity check
+            if (
+                event["parameters"][0] != event["parameters"][1]
+                or not event["parameters"][0] in var_122
+            ):
+                return
+            # String sanity check
+            if isinstance(event["parameters"][4], str):
+                text_data = {
+                    "type": "c12_text",
+                    "text": [event["parameters"][4].strip("'")],
+                    "pointer": [base_i],
+                }
+                page_list_events.append(text_data)
+            else:
+                return
 
         def process_code101(base_i):
             pointer = base_i + 1
@@ -170,7 +308,7 @@ class MVZFungler:
                 text_data["pointer"] = base_i
                 page_list_events.append(text_data)
             else:
-                
+
                 pointer = base_i + 1
                 nx_event = page_list_data[pointer]
                 nx_code = nx_event["code"]
@@ -195,6 +333,10 @@ class MVZFungler:
                 process_code101(t_idx)
             elif page_data["code"] == 102:
                 process_code102(t_idx)
+            elif page_data["code"] == 356:
+                process_code356(t_idx)
+            elif page_data["code"] == 122:
+                process_code122(t_idx)
         return page_list_events
 
     @property

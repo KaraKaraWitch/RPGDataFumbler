@@ -47,3 +47,11 @@ class SkillsMVfungler(MVZFungler):
                 skills[int(k)]["description"] = v["desc"]
         patch_file.write_bytes(orjson.dumps(skills))
         return True
+    
+    def import_map(self, format="nested") -> bool:
+        return super().import_map(format)
+    
+    def export_map(self, format="nested") -> bool:
+        if format == "nested":
+            
+        return super().export_map(format)

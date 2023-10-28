@@ -66,42 +66,46 @@ class CommonEventMVFungler(MVZFungler):
                     old_map[int(idx)]["list"][zero_ptr] = txt_event
         patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
 
-    def export_map(self):
+    def export_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if not mapping:
             return False
-        # print(self.mapped_file)
-        z = {}
-        for evidx, event in mapping["events"].items():
-            events = []
-            for text_data in event:
-                events.extend(text_data["text"])
-                events.append("<>")
-            z[evidx] = events
-        self.export_file.write_text(nestedtext.dumps(z), encoding="utf-8")
+        if format == "nested":
+            # print(self.mapped_file)
+            z = {}
+            for evidx, event in mapping["events"].items():
+                events = []
+                for text_data in event:
+                    events.extend(text_data["text"])
+                    events.append("<>")
+                z[evidx] = events
+            return self.export_nested(z)
+        elif format == "xlsx":
+            z = {}
+            for evidx, event in mapping["events"].items():
+                events = []
+                for text_data in event:
+                    events.extend(text_data["text"])
+                    events.append("<>")
+                z[evidx] = events
+            return self.export_excel(z)
+        else:
+            raise Exception(f"Unknown format: {format}")
 
-    def import_map(self):
+
+    def import_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if mapping is None:
-            return
-        try:
-            raw_data = self.export_file.read_text("utf-8")
-            if raw_data == "{}":
-                return
-            nesttext_data = nestedtext.loads(raw_data)
-        except nestedtext.NestedTextError as e:
-            # self.logger.error(f"")
-            self.logger.error(
-                f"Unable to import CommonEventsMVFungler NestedText for file: {self.export_file.name}. {e}"
-            )
-            return
-        # We assume it is a map file.
-        if not isinstance(nesttext_data, dict):
-            self.logger.error(
-                "Unable to use CommonEventsMVFungler NestedText. Expecting dictionary."
-            )
-            return
-        parsed_events = {}
+            return False
+        if format == "nested":
+            nesttext_data = self.import_nested(dict)
+        elif format == "xlsx":
+            nesttext_data = self.import_excel(dict)
+        else:
+            raise Exception(f"Unknown format: {format}")
+        # if format == "xlsx"
+        text_data = nesttext_data
+        
         for event_idx, lines in nesttext_data.items():
             reconstruct_events = []
             event_data = []
@@ -117,13 +121,13 @@ class CommonEventMVFungler(MVZFungler):
                 self.logger.error(
                     f"Mismatched key size: {k}. Expecting: {len(map_events)}. Got: {len(parsed_events[k])}"
                 )
-                return
+                return False
             for idx, event in enumerate(map_events):
                 if len(event["text"]) != len(parsed_events[k][idx]):
                     self.logger.error(
                         f"Mismatched key size: {event}. Expecting: {len(event['text'])}. Got: {len(parsed_events[k][idx])}"
                     )
-                    return
+                    return False
                 event["text"] = parsed_events[k][idx]
                 map_events[idx] = event
             mapping["events"][k] = map_events
@@ -194,42 +198,38 @@ class MapsMVFungler(MVZFungler):
 
         # return super().apply_maps(map_file)
 
-    def export_map(self):
+    def export_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if not mapping:
             return False
-        # print(self.mapped_file)
-        z = {}
-        for evidx, event in mapping["events"].items():
-            events = []
-            for _, page in event.items():
-                for text_data in page:
+        if format == "nested":
+            # print(self.mapped_file)
+            z = {}
+            for evidx, event in mapping["events"].items():
+                events = []
+                for text_data in event:
                     events.extend(text_data["text"])
                     events.append("<>")
-            z[evidx] = events
-        self.export_file.write_text(nestedtext.dumps(z), encoding="utf-8")
+                z[evidx] = events
+            return self.export_nested(z)
+        elif format == "xlsx":
+            z = {}
+            for evidx, event in mapping["events"].items():
+                events = []
+                for text_data in event:
+                    events.extend(text_data["text"])
+                    events.append("<>")
+                z[evidx] = events
+            return self.export_excel(z)
 
-    def import_map(self):
+    def import_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if mapping is None:
-            return
-        try:
-            raw_data = self.export_file.read_text("utf-8")
-            if raw_data == "{}":
-                return
-            nesttext_data = nestedtext.loads(raw_data)
-        except nestedtext.NestedTextError as e:
-            # self.logger.error(f"")
-            self.logger.error(
-                f"Unable to import MapsMVFungler NestedText for file: {self.export_file.name}. {e}"
-            )
-            return
-        # We assume it is a map file.
-        if not isinstance(nesttext_data, dict):
-            self.logger.error(
-                "Unable to use MapsMVFungler NestedText. Expecting dictionary."
-            )
-            return
+            return False
+        if format == "nested":
+            nesttext_data = self.import_nested()
+            if not nesttext_data or not isinstance(nesttext_data, dict):
+                return False
         parsed_events = {}
         for event_idx, lines in nesttext_data.items():
             reconstruct_events = []

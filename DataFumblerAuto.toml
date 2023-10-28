@@ -2,15 +2,29 @@
 # Configuration options for DataFumblerMVAuto.
 # =================================================== #
 
-[Prompt]
-# The prompt to use to translate the text.
+
+[OobaSampling]
+
+# =========================== #
+# Prompts to translate each and every type.
 events = "BEGINNING OF CONVERSATION: Avoid repetition, do not ever loop. Always stay in character. Translates all actions in full, elaborate, explicit, graphic, and vivid detail. You are an expert Smut translator who translates Japanese text.\n\nTranslate all text into English and output it in the following format. Reply with exactly only the English Translation of the text.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+
+map_names = "BEGINNING OF CONVERSATION: Reply with only the english translation of the location name\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+
+items = "BEGINNING OF CONVERSATION: Reply with only the english translation of the RPG item name and Description in 2 seperate sentences.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+
+actors = "BEGINNING OF CONVERSATION: Reply with only the english translation of the NPC name.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+
+armors = "BEGINNING OF CONVERSATION: Reply with only the english translation of the RPG equipment name.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+classes = "BEGINNING OF CONVERSATION: Reply with only the english translation of the RPG class name.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+weapons = "BEGINNING OF CONVERSATION: Reply with only the english translation of the RPG weapon name.\n\n\n***\n\nUSER: {dialogue}</s>\nASSISTANT:"
+
+# =========================== #
+
 # The url to send the request to.
 ooba_url = "http://localhost:5000/api/v1/generate"
 
 
-
-[OobaSampling]
 
 # Temperature. This makes the model more wild for higher values or tamer/stricter for lower values.
 temp = 0.9
@@ -61,6 +75,17 @@ API_Key = "file local.txt"
 # Prompt taken from DazedMTLTool. Thank you for your service.
 events = "You are an expert Smut translator who translates Japanese text.\n\nI want you to translate all text into English and output it in the following format.\n\nEverytime you receive Input in this format:\n\n'Line to Translate: <UNTRANSLATED_TEXT>' \n\nOutput it in this format:\n\n'Translation: <TRANSLATED_TEXT>'\n\n* Use \"Past Translated Text:\" to come up with the best translation and figure out the correct possessive. \n* Use \"Eroge Character Names Context:\" to know the names, nicknames, and gender of characters.\n* Pay attention to the subject speakers are referencing in the conversation.\n* Pay attention to the gender of the subjects and characters. Avoid misgendering them.\n* <I> is an emoji icon. Maintain any in the translation.\n* <C> is code to color text. Maintain any in the translation.\n* <N> is the name of a character. Maintain any in the translation.\n* <V> is an unknown variable. Maintain any in the translation.\n* Translate 'おまんこ' as 'pussy'.\n* Translate 'お尻' as 'butt'\n* Translate 'お股' as 'crotch'\n* Tranlsate '秘部' as 'genitals'"
 
+map_names = "Reply with only the english translation of the location name"
+
+items = "Reply with only the english translation of the RPG item name and Description in 2 seperate sentences."
+
+actors = "Reply with only the english translation of the NPC name."
+
+armors = "Reply with only the english translation of the RPG equipment name"
+classes = "Reply with only the english translation of the RPG class name"
+weapons = "Reply with only the english translation of the RPG weapon name"
+
+
 # Temperature. This makes the model more wild for higher values or tamer/stricter for lower values.
 # 0.0 means
 temp = 0.0
@@ -70,3 +95,37 @@ frequency_penalty = 0.2
 # common or cliché phrases
 presence_penalty = 0.2
 model = "gpt-3.5-turbo"
+
+[Google]
+
+# Collapses Event new lines. Example:
+# [こころ]
+# こにちは！
+# わたしはこころです！
+
+# [こころ]
+# こにちは！ わたしはこころです！
+
+# For MV:
+# The algorithm will detect if the first line uses any braces to indicate a particular person is speaking
+# For MZ (lines with "code101" meta filled):
+# MZ has a seperate field for names, as such it's easier to detect. We willingly collapse white spaces.
+
+collapse_event_newlines = true
+# Skips any "Smarts" for MV/MZ games and forces to collapse each event into an individual line. By enabling this, you will have to fix all the text yourself in excel.
+force_collapse = false
+
+[MTool]
+
+# "MTool" Translator....
+# It isn't a really good translator.
+# Sure it's auto but the translation it produces...
+# Frankly sucks.
+
+# Skip lines where MTool falls it's face flat:
+# - Skip unbalanced braced lines
+# - Skip Multiple punctuations
+# - Test if the translation is way too short
+#   for the original line by a factor of 1.5
+# If the value is empty or not found, defaults to true.
+skip_undesirables = true

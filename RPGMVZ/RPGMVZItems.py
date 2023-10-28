@@ -51,7 +51,7 @@ class ItemMVFungler(MVZFungler):
         patch_file.write_bytes(orjson.dumps(weapons))
         return True
 
-    def export_map(self) -> bool:
+    def export_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if not mapping:
             raise Exception(f"Cannot read Mappings?")

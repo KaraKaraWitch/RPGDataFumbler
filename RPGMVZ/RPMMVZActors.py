@@ -1,6 +1,6 @@
 import pathlib
 import orjson
-from .RPGMVZBase import MVZFungler
+from .RPGMVZBase import MVZFungler, pandas
 import nestedtext
 
 
@@ -59,13 +59,30 @@ class ActorMVFungler(MVZFungler):
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         return True
 
-    def export_map(self):
+    def export_map(self, format="nested") -> bool:
         mapping = self.read_mapped(create=False)
         if not mapping:
             return False
-        self.export_file.write_text(
-            nestedtext.dumps(mapping["actors"]), encoding="utf-8"
-        )
+        if format == "nested":
+            export_actors = {"Actors": []}
+            for actor in mapping["actors"].values():
+                export_actors["Actors"].append(actor["name"])
+                export_actors["Actors"].append(actor["note"])
+                export_actors["Actors"].append(actor["nickname"])
+                export_actors["Actors"].append(actor["profile"])
+            self.export_nested(export_actors)
+            return True
+        elif format == "xlsx":
+            export_actors = {"Actors": []}
+            for actor in mapping["actors"].values():
+                export_actors["Actors"].append(actor["name"])
+                export_actors["Actors"].append(actor["note"])
+                export_actors["Actors"].append(actor["nickname"])
+                export_actors["Actors"].append(actor["profile"])
+            self.export_excel(export_actors)
+            return True
+        else:
+            raise DeprecationWarning("Nested Text is deprecated for exports.")
         return True
 
     def import_map(self) -> bool:
