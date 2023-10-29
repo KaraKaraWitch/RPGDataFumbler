@@ -8,6 +8,8 @@ from .RPGMVZItems import ItemMVFungler
 from .RPGMVZEvents import CommonEventMVFungler, MapsMVFungler
 from .RPGMVZSystem import SystemMVfungler
 from .RPMMVZActors import ActorMVFungler
+from .RPGMVZClasses import ClassesMVFungler
+from .RPMMVZSkills import SkillsMVfungler
 
 
 class MVZHandler:
@@ -105,6 +107,14 @@ class MVZHandler:
                 return ItemMVFungler(orig_file, map_file, export_file, self.config)
             if "commonevents" in orig_file.name.lower():
                 return CommonEventMVFungler(
+                    orig_file, map_file, export_file, self.config
+                )
+            if "classes" in orig_file.name.lower():
+                return ClassesMVFungler(
+                    orig_file, map_file, export_file, self.config
+                )
+            if "skills" in orig_file.name.lower():
+                return SkillsMVfungler(
                     orig_file, map_file, export_file, self.config
                 )
 

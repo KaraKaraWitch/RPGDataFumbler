@@ -37,15 +37,18 @@ class SkillsMVfungler(MVZFungler):
             )
             return False
 
-        skills = self.original_data
+        skill_data = self.original_data
+
+        if not isinstance(skill_data, list):
+            raise Exception("SkillData not in correct format.")
 
         for k,v in mapping["skills"].items():
-            skills[int(k)]["name"] = v["name"]
-            skills[int(k)]["message1"] = v["msgs"][0]
-            skills[int(k)]["message2"] = v["msgs"][1]
+            skill_data[int(k)]["name"] = v["name"]
+            skill_data[int(k)]["message1"] = v["msgs"][0]
+            skill_data[int(k)]["message2"] = v["msgs"][1]
             if "desc" in v:
-                skills[int(k)]["description"] = v["desc"]
-        patch_file.write_bytes(orjson.dumps(skills))
+                skill_data[int(k)]["description"] = v["desc"]
+        patch_file.write_bytes(orjson.dumps(skill_data))
         return True
     
     def import_map(self, format="nested") -> bool:
@@ -53,5 +56,5 @@ class SkillsMVfungler(MVZFungler):
     
     def export_map(self, format="nested") -> bool:
         if format == "nested":
-            
+            pass
         return super().export_map(format)
