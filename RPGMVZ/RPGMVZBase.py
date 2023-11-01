@@ -35,8 +35,8 @@ class MVZFungler:
 
         Args:
             original_file (pathlib.Path): The Input file from the game.
-            mapped_file (pathlib.Path): _description_
-            export_file (pathlib.Path): _description_
+            mapped_file (pathlib.Path): The mapped file to write to.
+            export_file (pathlib.Path): The export file to write to.
             config (dict): Configuration for the project
         """
         self.original_file: pathlib.Path = original_file
@@ -107,11 +107,14 @@ class MVZFungler:
             for sheet_name, list_values in values.items():
                 formatted = {
                     "Original": list_values,
-                    "Inital": [],
-                    "Edited": [],
-                    "Final": [],
+                    "Inital": [""] * len(list_values),
+                    "Edited": [""] * len(list_values),
+                    "Final": [""] * len(list_values),
                 }
-                pandas.DataFrame(formatted).to_excel(writer, sheet_name=sheet_name)
+
+                pandas.DataFrame.from_dict(formatted).to_excel(
+                    writer, sheet_name=sheet_name
+                )
         return True
 
     def export_nested(
@@ -220,6 +223,10 @@ class MVZFungler:
         do_dtext = self.config.get("Events", {}).get("dtext", False)
         dtext_rgx = re.compile(r"D_TEXT (.+) (\d+)")
 
+        var_122 = self.config.get("Events", {}).get("code_122", None)
+        if var_122 is None:
+            raise Exception("code_122 is missing.")
+
         def process_code356(base_i):
             event = page_list_data[base_i]
             if do_dtext:
@@ -241,10 +248,7 @@ class MVZFungler:
                     "pointer": [base_i],
                     "meta": dtext_rgx.sub(f"D_TEXT {{DTEXT}} {fi[0][1]}", dtext_param),
                 }
-
                 page_list_events.append(text_data)
-
-        var_122 = self.config.get("Events", {}).get("code_122", [])
 
         def process_code122(base_i):
             if not var_122:
@@ -267,6 +271,17 @@ class MVZFungler:
                 page_list_events.append(text_data)
             else:
                 return
+
+        def process_code320(base_i):
+            event = page_list_data[base_i]
+            if isinstance(event["parameters"][1], str):
+                text_data = {
+                    "type": "text_name_change",
+                    "text": [],
+                    "pointer": [base_i],
+                    "meta": "",
+                }
+                page_list_events.append(text_data)
 
         def process_code101(base_i):
             pointer = base_i + 1
@@ -337,6 +352,8 @@ class MVZFungler:
                 process_code356(t_idx)
             elif page_data["code"] == 122:
                 process_code122(t_idx)
+            elif page_data["code"] == 320:
+                process_code320(t_idx)
         return page_list_events
 
     @property

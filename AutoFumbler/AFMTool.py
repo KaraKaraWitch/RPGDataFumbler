@@ -52,10 +52,8 @@ class MToolTranslator2(AutoTranslator):
                 return True
             return False
         return True
-        
 
-
-    def translate_actors(self, names: typing.Dict[typing.List[str]]) -> typing.Dict[int, typing.List[str]]:
+    def translate_actors(self, names: typing.Dict[str, typing.List[str]]) -> typing.Dict[int, typing.List[str]]:
         for actor_idx, actor_data in names.items():
             name, profile, nick = actor_data
             repacked = [
@@ -69,5 +67,3 @@ class MToolTranslator2(AutoTranslator):
             names[actor_idx] = repacked
         return names
     
-    def translate_events(self, events: typing.Dict[str, typing.List[str]]) -> typing.Dict[str, typing.List[str]]:
-        for event in 

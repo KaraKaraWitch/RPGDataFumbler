@@ -27,11 +27,8 @@ class OobaModel(AutoTranslator):
         final = {}
         for event_id, dialogues in nested_text.items():
             t_buffer = ""
-            for c_dialogues in chunks(dialogues, 5):
-                diags_concat = "\n\n".join(c_dialogues)
-                if not diags_concat.strip():
-                    continue
-                dc = self.prompt["events"].replace("{dialogues}",diags_concat)
+            for diag in dialogues:
+                dc = self.prompt["events"].replace("{dialogues}",diag)
                 request = {
                     'prompt': dc,
                     'max_new_tokens': 1024,

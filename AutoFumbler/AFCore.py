@@ -2,7 +2,14 @@ import pathlib
 import typing
 import dataclasses
 
+import nestedtext
+
 class AutoTranslator:
+
+    def __init__(self, config: dict, game_config:dict) -> None:
+        self.config = config
+        self.game_config = game_config
+
     def translate_actors(
         self, names: typing.Dict[int, typing.List[str]]
     ) -> typing.Dict[int, typing.List[str]]:
@@ -74,6 +81,33 @@ class AutoTranslator:
             typing.Dict[str, typing.List[str]]: _description_
         """
         raise NotImplementedError()
+    
+    def read_nested(self, nested:pathlib.Path) -> typing.Union[typing.List[str], typing.Dict[str,typing.Any], None]:
+        try:
+            r = nestedtext.loads(nested.read_text(encoding="utf-8"))
+            if isinstance(r,(int, dict)):
+                return r
+            else:
+                return None
+        except nestedtext.NestedTextError:
+            return None
+        
+    def write_nested(self, data:typing.Dict[str, typing.List[str]], nested:pathlib.Path) -> typing.Union[typing.List[str], typing.Dict[str,typing.Any], None]:
+        nested.write_text(nestedtext.dumps(data),encoding="utf-8")
+        
+    def unpack_list_like(self, list_data:typing.List[str], sep:str="<>") -> typing.List[typing.List[str]]:
+        data = []
+        buffer = []
+        for item in list_data:
+            if item == sep:
+                data.append(buffer)
+                buffer = []
+            else:
+                buffer.append(item)
+        if buffer:
+            data.append(buffer)
+        return buffer
+        
 
     def translate_exports(
         self,

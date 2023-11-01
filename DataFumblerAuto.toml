@@ -1,5 +1,7 @@
 # =================================================== #
 # Configuration options for DataFumblerMVAuto.
+# DataFumblerAuto will attempt load this file for
+# default before overriding.
 # =================================================== #
 
 
@@ -72,9 +74,9 @@ mirostat_eta = 0.1
 API_Key = "file local.txt"
 
 # The system prompt to use for events
-# Prompt taken from DazedMTLTool. Thank you for your service.
-events = "You are an expert Smut translator who translates Japanese text.\n\nI want you to translate all text into English and output it in the following format.\n\nEverytime you receive Input in this format:\n\n'Line to Translate: <UNTRANSLATED_TEXT>' \n\nOutput it in this format:\n\n'Translation: <TRANSLATED_TEXT>'\n\n* Use \"Past Translated Text:\" to come up with the best translation and figure out the correct possessive. \n* Use \"Eroge Character Names Context:\" to know the names, nicknames, and gender of characters.\n* Pay attention to the subject speakers are referencing in the conversation.\n* Pay attention to the gender of the subjects and characters. Avoid misgendering them.\n* <I> is an emoji icon. Maintain any in the translation.\n* <C> is code to color text. Maintain any in the translation.\n* <N> is the name of a character. Maintain any in the translation.\n* <V> is an unknown variable. Maintain any in the translation.\n* Translate 'おまんこ' as 'pussy'.\n* Translate 'お尻' as 'butt'\n* Translate 'お股' as 'crotch'\n* Tranlsate '秘部' as 'genitals'"
+events = "You are an expert translator who translates Japanese text into natural english. You are to translate with verbantism. While translating you are allowed to rewrite sentences to fit the dialogue better."
 
+# Prompt taken from DazedMTLTool. Thank you for your service.
 map_names = "Reply with only the english translation of the location name"
 
 items = "Reply with only the english translation of the RPG item name and Description in 2 seperate sentences."
@@ -100,20 +102,17 @@ model = "gpt-3.5-turbo"
 
 # Collapses Event new lines. Example:
 # [こころ]
-# こにちは！
+# こにちは
 # わたしはこころです！
 
 # [こころ]
-# こにちは！ わたしはこころです！
-
-# For MV:
-# The algorithm will detect if the first line uses any braces to indicate a particular person is speaking
-# For MZ (lines with "code101" meta filled):
-# MZ has a seperate field for names, as such it's easier to detect. We willingly collapse white spaces.
+# こにちは わたしはこころです！
 
 collapse_event_newlines = true
-# Skips any "Smarts" for MV/MZ games and forces to collapse each event into an individual line. By enabling this, you will have to fix all the text yourself in excel.
-force_collapse = false
+# Punctuations to detect on collapsing or not
+punctuations = "？！。…」♡♥、"
+max_event_lines = 3
+collapse_length = 4
 
 [MTool]
 

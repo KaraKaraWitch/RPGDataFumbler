@@ -212,7 +212,10 @@ class MVZHandler:
 
             map_file = tl_folder / rel
             export_file: pathlib.Path = export_folder / rel
-            export_file = export_file.with_suffix(".nt.txt")
+            if format == "xlsx":
+                export_file = export_file.with_suffix(".xlsx")
+            elif format == "nested":
+                export_file = export_file.with_suffix(".nt.txt")
             cls = self.resolve_file(json_file, map_file, export_file)
             if cls:
                 if (tl_folder / rel).exists() and replace:
@@ -224,7 +227,7 @@ class MVZHandler:
                         (export_folder / rel).parent.mkdir(parents=True, exist_ok=True)
                     try:
                         if map_file.exists():
-                            cls.export_map()
+                            cls.export_map(format=format)
                             if format == "nested":
                                 orig_export = export_file.with_suffix(".ORIG.nt.txt")
                                 if export_file.exists() and not orig_export.exists():

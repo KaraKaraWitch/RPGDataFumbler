@@ -40,11 +40,13 @@ def mapping(
     else:
         config = game_exec.resolve().parent / "DataFumbler.toml"
         if not config.exists():
-            raise Exception("Config Read Error. Config not found.")
+            typer.secho("Config Read Error. `DataFumbler.toml` not found in game directory", fg="red")
+            return False
         try:
             config_dict = tomli.loads(config.read_text(encoding="utf-8"))
         except tomli.TOMLDecodeError:
-            raise Exception("Config Read Error. Decode Error.")
+            typer.secho("Config Read Error. `DataFumbler.toml` was not decoded properly. Check your config.", fg="red")
+            return False
     MVZHandler(game_exec, config_dict).create_maps(replace=overwrite)
 
 
@@ -53,6 +55,7 @@ def export_data(
     game_exec: pathlib.Path,
     config: typing.Optional[pathlib.Path] = None,
     overwrite: bool = False,
+    format = "xlsx"
 ):
 
     if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
@@ -71,7 +74,7 @@ def export_data(
             config_dict = tomli.loads(config.read_text(encoding="utf-8"))
         except tomli.TOMLDecodeError:
             raise Exception("Config Read Error. Decode Error.")
-    MVZHandler(game_exec, config_dict).export(replace=overwrite)
+    MVZHandler(game_exec, config_dict).export(replace=overwrite, format=format)
 
 
 @app.command(name="import")

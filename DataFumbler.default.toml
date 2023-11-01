@@ -1,0 +1,60 @@
+# =================================================== #
+# Default Configuration options for DataFumbler.
+# =================================================== #
+
+[General]
+# Replace existing files in the "translations folder" folder when mapping?
+replace = false
+
+# Defines the game "type". Generally, if you see "www" folder together with the, it is "MV". If you see "data" 
+type = "MV"
+
+# Configs relating to System.json mapping.
+[System]
+# Map equipTypes?
+armor_types = true
+# Map equipTypes?
+equip_types = true
+# Map elements?
+elements = true
+# Map skillTypes?
+skill_types = true
+
+# Terms stuff
+# Export Terms?
+# May not be the same across games!
+# Recommended to export.
+terms = true
+
+# Applies some default translations used in
+# the english version of RPGMakerMV. 
+terms_map_default = true
+
+
+# Unsupported Arguments
+
+# Map "switches"?
+# This can potentially break some games as
+# it is typically not shown to the player.
+switches = false
+
+# Map "variables" (aka map variable names)?
+# This can potentially break some games as
+# it is typically not shown to the player.
+# Useful for code_122. See below.
+variables = false
+
+# Change the locale for the System.json.
+# Untested & not implemented. May break things.
+locale = ""
+
+[Events]
+
+# Process D_Text variables.
+# if `DTextPicture.js` is inside the plugins folder, do consider enable this.
+# By default is enabled as disabling it doesn't have any negative effects.
+dtext = true
+
+# If any game uses `\v[number]` inside map.json or commonevents.json, consider noting down the number inside it and write it down to translate it properly.
+# This additionally checks for string elements and skips integers, so it's generally safer.
+code_122 = []

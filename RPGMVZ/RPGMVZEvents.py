@@ -64,6 +64,18 @@ class CommonEventMVFungler(MVZFungler):
                     txt_event = old_map[int(idx)]["list"][zero_ptr]
                     txt_event["parameters"][0] = text_data["text"]
                     old_map[int(idx)]["list"][zero_ptr] = txt_event
+                # D_TEXT
+                elif text_data["type"] == "d_text":
+                    d_pointer = text_data["pointer"][0]
+                    formatted = text_data["meta"].replace(DTEXT=text_data["text"][0])
+                    txt_event = old_map[int(idx)]["list"][d_pointer]
+                    txt_event["parameters"][0] = formatted
+                    old_map[int(idx)]["list"][d_pointer] = txt_event
+                elif text_data["type"] == "c12_text":
+                    c12_pointer = text_data["pointer"][0]
+                    txt_event = old_map[int(idx)]["list"][c12_pointer]
+                    txt_event["parameters"][4] = f"'{text_data['text'][0]}'"
+                    old_map[int(idx)]["list"][c12_pointer] = txt_event
         patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
 
     def export_map(self, format="nested") -> bool:
@@ -92,7 +104,6 @@ class CommonEventMVFungler(MVZFungler):
         else:
             raise Exception(f"Unknown format: {format}")
 
-
     def import_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if mapping is None:
@@ -103,9 +114,9 @@ class CommonEventMVFungler(MVZFungler):
             nesttext_data = self.import_excel(dict)
         else:
             raise Exception(f"Unknown format: {format}")
-        # if format == "xlsx"
-        text_data = nesttext_data
-        
+        if not nesttext_data:
+            return False
+        parsed_events = {}
         for event_idx, lines in nesttext_data.items():
             reconstruct_events = []
             event_data = []
@@ -132,6 +143,7 @@ class CommonEventMVFungler(MVZFungler):
                 map_events[idx] = event
             mapping["events"][k] = map_events
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+        return True
 
 
 class MapsMVFungler(MVZFungler):
@@ -150,47 +162,47 @@ class MapsMVFungler(MVZFungler):
             evnt_id = int(evnt_id)
 
             event_data = old_events[evnt_id]
-            # TODO: Eventually refactor these bits
             for page_code_idx, page in page_maps.items():
                 page_code_idx = int(page_code_idx)
+                # Get thge current page_data
+                page_data = old_events[evnt_id]["pages"][page_code_idx]
                 for trans in page:
                     if trans["type"] == "text":
                         for txt_idx, ptr in enumerate(trans["pointer"]):
                             if txt_idx == 0 and "101code" in trans["meta"]:
-                                text_event = old_events[evnt_id]["pages"][
-                                    page_code_idx
-                                ]["list"][ptr]
+                                text_event = page_data["list"][ptr]
                                 text_event["parameters"][4] = trans["text"][txt_idx]
-                                old_events[evnt_id]["pages"][page_code_idx]["list"][
-                                    ptr
-                                ] = text_event
+                                page_data["list"][ptr] = text_event
                             else:
-                                text_event = old_events[evnt_id]["pages"][
-                                    page_code_idx
-                                ]["list"][ptr]
+                                text_event = page_data["list"][ptr]
                                 text_event["parameters"][0] = trans["text"][txt_idx]
-                                old_events[evnt_id]["pages"][page_code_idx]["list"][
-                                    ptr
-                                ] = text_event
+                                page_data["list"][ptr] = text_event
                     elif trans["type"] == "text_choice":
                         # For Code 402
                         for txt_idx, ptr in enumerate(trans["pointer"][1:]):
-                            text_event = old_events[evnt_id]["pages"][page_code_idx][
-                                "list"
-                            ][ptr]
+                            text_event = page_data["list"][ptr]
                             text_event["parameters"][1] = trans["text"][txt_idx]
-                            old_events[evnt_id]["pages"][page_code_idx]["list"][
-                                ptr
-                            ] = text_event
+                            page_data["list"][ptr] = text_event
                             # print(events[page_idx], ptr, trans[txt_idx])
                         # Write back to code 102
                         text_event = old_events[evnt_id]["pages"][page_code_idx][
                             "list"
                         ][trans["pointer"][0]]
                         text_event["parameters"][0] = trans["text"]
-                        old_events[evnt_id]["pages"][page_code_idx]["list"][
-                            trans["pointer"][0]
-                        ] = text_event
+                        page_data["list"][trans["pointer"][0]] = text_event
+                    elif trans["type"] == "d_text":
+                        d_pointer = trans["pointer"][0]
+                        formatted = trans["meta"].replace(DTEXT=trans["text"][0])
+                        txt_event = page_data["list"][d_pointer]
+                        txt_event["parameters"][0] = formatted
+                        page_data["list"][d_pointer] = txt_event
+                    elif trans["type"] == "c12_text":
+                        c12_pointer = trans["pointer"][0]
+                        txt_event = page_data["list"][c12_pointer]
+                        txt_event["parameters"][4] = f"'{trans['text'][0]}'"
+                        page_data["list"][c12_pointer] = txt_event
+                # Set back the page data
+                old_events[evnt_id]["pages"][page_code_idx] = page_data
             old_events[evnt_id] = event_data
         old_map["events"] = old_events
         patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
@@ -207,29 +219,48 @@ class MapsMVFungler(MVZFungler):
             z = {}
             for evidx, event in mapping["events"].items():
                 events = []
-                for text_data in event:
-                    events.extend(text_data["text"])
-                    events.append("<>")
+                for page_idx, page_events in event.items():
+                    # print(page)
+                    # for _, text_data in page:
+                    for event in page_events:
+                        # print(text_data)
+                        events.extend(event["text"])
+                        events.append("<>")
                 z[evidx] = events
-            return self.export_nested(z)
+            self.export_nested(z)
+            return True
         elif format == "xlsx":
             z = {}
             for evidx, event in mapping["events"].items():
                 events = []
-                for text_data in event:
-                    events.extend(text_data["text"])
-                    events.append("<>")
+                for page_idx, text_data in event.items():
+                    # print(page)
+                    # for _, text_data in page:
+                    for event in events:
+                        # print(text_data)
+                        events.extend(event["text"])
+                        events.append("<>")
                 z[evidx] = events
-            return self.export_excel(z)
+            self.export_excel(z)
+            return True
+        else:
+            raise Exception(f"{format} Not Supported")
 
     def import_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if mapping is None:
             return False
         if format == "nested":
-            nesttext_data = self.import_nested()
-            if not nesttext_data or not isinstance(nesttext_data, dict):
+            nesttext_data = self.import_nested(dict)
+            if not nesttext_data:
                 return False
+        elif format == "xlsx":
+            nesttext_data = self.import_excel(dict)
+            if not nesttext_data:
+                return False
+        else:
+            print(format, "Not Supported.")
+            return False
         parsed_events = {}
         for event_idx, lines in nesttext_data.items():
             reconstruct_events = []
@@ -254,7 +285,7 @@ class MapsMVFungler(MVZFungler):
                         self.logger.error(events[0])
                         self.logger.error(text_data["text"])
                         self.logger.error(self.export_file.name)
-                        return
+                        return False
                     self.logger.debug(f"{text_data['text']} {events[0]}")
                     text_data["text"] = events[0]
                     events.pop(0)
@@ -266,8 +297,9 @@ class MapsMVFungler(MVZFungler):
                 self.logger.error("Mismatch import for events.")
                 self.logger.error(len(events))
                 self.logger.error(self.export_file.name)
-                return
+                return False
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+        return True
 
     def create_maps(self):
         mapping = self.read_mapped(create=True)

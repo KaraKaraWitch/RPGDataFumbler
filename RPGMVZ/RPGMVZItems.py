@@ -55,47 +55,52 @@ class ItemMVFungler(MVZFungler):
         mapping = self.read_mapped()
         if not mapping:
             raise Exception(f"Cannot read Mappings?")
-        items = {}
-        for weapon_idx_s, trans_data in mapping["item"].items():
-            items[weapon_idx_s] = [
-                trans_data["name"],
-                trans_data["desc"],
-                trans_data["note"],
-            ]
-        self.export_file.write_text(nestedtext.dumps(items), encoding="utf-8")
-        return True
+        if format == "nested":
+            items = {}
+            for weapon_idx_s, trans_data in mapping["item"].items():
+                items[weapon_idx_s] = [
+                    trans_data["name"],
+                    trans_data["desc"],
+                    trans_data["note"],
+                ]
+            self.export_nested(items)
+            return True
+        elif format == "xlsx":
+            items = []
+            for _, trans_data in mapping["item"].items():
+                items.extend([
+                    trans_data["name"],
+                    trans_data["desc"],
+                    trans_data["note"],
+                    "<>"
+                ])
+            self.export_excel({"items":items})
+        return False
 
-    def import_map(self) -> bool:
+    def import_map(self, format="nested") -> bool:
         mapping = self.read_mapped()
         if mapping is None:
             return False
-        try:
-            raw_data = self.export_file.read_text("utf-8")
-            if raw_data == "{}":
+        if format == "nested":
+            nesttext_data = self.import_nested(dict)
+            if not nesttext_data:
                 return False
-            nesttext_data = nestedtext.loads(raw_data)
-        except nestedtext.NestedTextError as e:
-            # self.logger.error(f"")
-            self.logger.error(
-                f"Unable to import MapsMVFungler NestedText for file: {self.export_file.name}. {e}"
-            )
-            return False
+            for weapon_idx_s, packed in nesttext_data.items():
+                try:
+                    name, desc, note = packed
+                except Exception:
+                    self.logger.error(
+                        f"Unable to import NestedText for Items: {self.export_file.name}, Mismatch packed sizes for: {packed}"
+                    )
+                    return False
+                mapping["item"][weapon_idx_s]["name"] = name
+                mapping["item"][weapon_idx_s]["desc"] = desc
+                mapping["item"][weapon_idx_s]["note"] = note
+        elif format == "xlsx":
+            nesttext_data = self.import_excel(dict)
+            if not nesttext_data:
+                return False
         # We assume it is a map file.
-        if not isinstance(nesttext_data, dict):
-            self.logger.error(
-                "Unable to use MapsMVFungler NestedText. Expecting dictionary."
-            )
-            return False
-        for weapon_idx_s, packed in nesttext_data.items():
-            try:
-                name, desc, note = packed
-            except Exception:
-                self.logger.error(
-                    f"Unable to import NestedText for Items: {self.export_file.name}, Mismatch packed sizes for: {packed}"
-                )
-                return False
-            mapping["item"][weapon_idx_s]["name"] = name
-            mapping["item"][weapon_idx_s]["desc"] = desc
-            mapping["item"][weapon_idx_s]["note"] = note
+        
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
         return True

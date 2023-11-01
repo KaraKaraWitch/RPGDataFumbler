@@ -70,6 +70,7 @@ class ActorMVFungler(MVZFungler):
                 export_actors["Actors"].append(actor["note"])
                 export_actors["Actors"].append(actor["nickname"])
                 export_actors["Actors"].append(actor["profile"])
+                export_actors["Actors"].append("<>")
             self.export_nested(export_actors)
             return True
         elif format == "xlsx":
@@ -79,21 +80,51 @@ class ActorMVFungler(MVZFungler):
                 export_actors["Actors"].append(actor["note"])
                 export_actors["Actors"].append(actor["nickname"])
                 export_actors["Actors"].append(actor["profile"])
+                export_actors["Actors"].append("<>")
             self.export_excel(export_actors)
             return True
-        else:
-            raise DeprecationWarning("Nested Text is deprecated for exports.")
-        return True
+        raise NotImplementedError(f"Format: {format} is not Implemented.")
 
-    def import_map(self) -> bool:
-        mapping = self.read_mapped(create=False)
-        if not mapping:
+    def import_map(self, format="nested") -> bool:
+        mappings = self.read_mapped(create=False)
+        if not mappings:
             return False
-        try:
-            imports = nestedtext.loads(self.export_file.read_text(encoding="utf-8"))
-        except nestedtext.NestedTextError as e:
-            self.logger.error(f"Failed to load export file for Actors: {e}")
-            return False
-        mapping["actors"] = imports
-        self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
+        # TODO: Fix actors
+        if format == "nested":
+            actors = []
+            buffer = []
+            data = self.import_nested(dict)
+            if not data:
+                return False
+            for skill in data["Actors"]:
+                if skill == "<>":
+                    actors.append(buffer)
+                    buffer = []
+                else:
+                    buffer.append(skill)
+            ctr = 0
+            for k,_ in mappings["actors"].items():
+                mappings[k]["name"] = actors[ctr][0]
+                mappings[k]["note"] = actors[ctr][1]
+                mappings[k]["nickname"] = actors[ctr][2]
+                mappings[k]["profile"] = actors[ctr][3]
+        elif format == "xlsx":
+            actors = []
+            buffer = []
+            data = self.import_excel(dict)
+            if not data:
+                return False
+            for skill in data["Actors"]:
+                if skill == "<>":
+                    actors.append(buffer)
+                    buffer = []
+                else:
+                    buffer.append(skill)
+            ctr = 0
+            for k,_ in mappings["actors"].items():
+                mappings[k]["name"] = actors[ctr][0]
+                mappings[k]["note"] = actors[ctr][1]
+                mappings[k]["nickname"] = actors[ctr][2]
+                mappings[k]["profile"] = actors[ctr][3]
+        self.mapped_file.write_bytes(orjson.dumps(mappings, option=orjson.OPT_INDENT_2))
         return True

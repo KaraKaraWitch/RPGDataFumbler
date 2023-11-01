@@ -24,47 +24,6 @@ import nestedtext
 from RPGMVZ import MVZHandler
 from AutoFumbler import AFMTool
 
-
-
-
-
-class Googled:
-    def __init__(self, **kwargs) -> None:
-        try:
-            from translatepy.translators.google import GoogleTranslate
-        except ImportError:
-            raise NotImplementedError(
-                f"Google Translation requires translatepy package to be installed. run: `pip install translatepy` if on windows."
-            )
-        self.translator = GoogleTranslate()
-
-    def batch_translate(self, text: list):
-        print(f"[DF|GTrans] Translating: {len(text)}")
-        lines = "\n".join(text)
-        translated = self.translator.translate(lines, "English")
-        txt_result = translated.result
-
-        if len(text) != len(txt_result.split("\n")):
-            # Try translate each line on it's own as fallback.
-            results = []
-            for line in text:
-                results.append(self.translate(line))
-        else:
-            results = [i.strip() for i in txt_result.split("\n")]
-        return results
-
-    def translate(self, text: str):
-        translated = self.translator.translate(text, "English")
-        return translated.result.strip()
-        # return super().translate(text)
-
-
-
-
-
-
-
-
 app = typer.Typer()
 
 @app.command(name="MTool")

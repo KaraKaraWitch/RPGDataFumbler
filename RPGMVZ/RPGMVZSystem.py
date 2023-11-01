@@ -176,11 +176,20 @@ class SystemMVfungler(MVZFungler):
                     )
                     mapping["terms"]["messages"][k] = terms.get(k, ["", ""])[1]
         if self.config["System"]["variables"]:
-            self.logger.warning("Exporting variables for system, translating variables may cause breakage!")
+            self.logger.warning("Exporting variables for system, translating variables may cause the game to break!")
             mapping["variables"] = {}
             for idx, var_value in enumerate(system_data["variables"]):
                 if var_value:
                     mapping["variables"][str(idx)] = var_value
+        if self.config["System"]["switches"]:
+            self.logger.warning("Exporting variables for system, translating variables may cause the game to break!")
+            mapping["variables"] = {}
+            for idx, var_value in enumerate(system_data["switches"]):
+                if var_value:
+                    mapping["switches"][str(idx)] = var_value
+        if self.config["System"]["locale"]:
+            self.logger.warning("Exporting loacle for system, translating variables may cause the game to break!")
+            mapping["locale"] = self.config["System"]["locale"]
 
         mapping["game_title"] = system_data["gameTitle"]
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
