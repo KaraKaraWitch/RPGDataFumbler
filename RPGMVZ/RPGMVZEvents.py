@@ -67,14 +67,14 @@ class CommonEventMVFungler(MVZFungler):
                 # D_TEXT
                 elif text_data["type"] == "d_text":
                     d_pointer = text_data["pointer"][0]
-                    formatted = text_data["meta"].replace(DTEXT=text_data["text"][0])
+                    formatted = text_data["meta"].format(DTEXT=text_data["text"][0])
                     txt_event = old_map[int(idx)]["list"][d_pointer]
                     txt_event["parameters"][0] = formatted
                     old_map[int(idx)]["list"][d_pointer] = txt_event
                 elif text_data["type"] == "c12_text":
                     c12_pointer = text_data["pointer"][0]
                     txt_event = old_map[int(idx)]["list"][c12_pointer]
-                    txt_event["parameters"][4] = f"'{text_data['text'][0]}'"
+                    txt_event["parameters"][-1] = f"'{text_data['text'][0]}'"
                     old_map[int(idx)]["list"][c12_pointer] = txt_event
         patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
 
@@ -89,7 +89,11 @@ class CommonEventMVFungler(MVZFungler):
                 events = []
                 for text_data in event:
                     events.extend(text_data["text"])
-                    events.append("<>")
+                    if text_data["type"] == "text_choice":
+                        # hack to work around detection of <>
+                        events.append("<>c")
+                    else:
+                        events.append("<>")
                 z[evidx] = events
             return self.export_nested(z)
         elif format == "xlsx":
@@ -121,7 +125,7 @@ class CommonEventMVFungler(MVZFungler):
             reconstruct_events = []
             event_data = []
             for line in lines:
-                if line == "<>":
+                if line.startswith("<>") and len(line) in [2,3]:
                     reconstruct_events.append(event_data)
                     event_data = []
                 else:
@@ -192,7 +196,7 @@ class MapsMVFungler(MVZFungler):
                         page_data["list"][trans["pointer"][0]] = text_event
                     elif trans["type"] == "d_text":
                         d_pointer = trans["pointer"][0]
-                        formatted = trans["meta"].replace(DTEXT=trans["text"][0])
+                        formatted = trans["meta"].format(DTEXT=trans["text"][0])
                         txt_event = page_data["list"][d_pointer]
                         txt_event["parameters"][0] = formatted
                         page_data["list"][d_pointer] = txt_event
@@ -266,7 +270,7 @@ class MapsMVFungler(MVZFungler):
             reconstruct_events = []
             event_data = []
             for line in lines:
-                if line == "<>":
+                if line.startswith("<>") and len(line) in [2,3]:
                     reconstruct_events.append(event_data)
                     event_data = []
                 else:

@@ -48,6 +48,7 @@ class MVZFungler:
         self._cached_orig_data = None
 
     fungler_type = None
+    jp_rgx = re.compile(r"[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+", flags=re.UNICODE)
 
     def apply_maps(self, patch_file: pathlib.Path) -> bool:
         raise NotImplementedError()
@@ -222,10 +223,12 @@ class MVZFungler:
         t_pages = len(page_list_data)
         do_dtext = self.config.get("Events", {}).get("dtext", False)
         dtext_rgx = re.compile(r"D_TEXT (.+) (\d+)")
+        dtext_rgx_fallback = re.compile(r"D_TEXT (.+)")
 
         var_122 = self.config.get("Events", {}).get("code_122", None)
-        if var_122 is None:
-            raise Exception("code_122 is missing.")
+        auto_var_122 = self.config.get("Events", {}).get("auto_code_122", None)
+        if var_122 is None or auto_var_122 is None:
+            raise Exception("code_122/auto_code_122 is missing.")
 
         def process_code356(base_i):
             event = page_list_data[base_i]
@@ -238,20 +241,33 @@ class MVZFungler:
                 ) and not event_param.startswith("D_TEXT_SETTING")
                 if not d_text_check:
                     return
+                if event_param.strip() == "D_TEXT":
+                    return
                 dtext_param = event["parameters"][0]
                 fi = dtext_rgx.findall(dtext_param)
+                fallback = False
                 if not fi:
-                    raise Exception("Regex failed to match DText")
+                    fi = dtext_rgx_fallback.findall(dtext_param)
+                    if isinstance(fi[0], str):
+                        fi = [[fi[0], "_"]]
+                    fallback = True
+                if not fi:
+                    self.logger.info("Regex failed to match DText.")
+                    return
+                    # raise Exception("Regex failed to match DText.")
+                
                 text_data = {
                     "type": "d_text",
                     "text": [fi[0][0]],
                     "pointer": [base_i],
                     "meta": dtext_rgx.sub(f"D_TEXT {{DTEXT}} {fi[0][1]}", dtext_param),
                 }
+                if fallback:
+                    text_data["meta"] = f"D_TEXT {{DTEXT}}"
                 page_list_events.append(text_data)
 
         def process_code122(base_i):
-            if not var_122:
+            if not var_122 and not auto_var_122:
                 return
             event = page_list_data[base_i]
 
@@ -260,15 +276,20 @@ class MVZFungler:
                 event["parameters"][0] != event["parameters"][1]
                 or not event["parameters"][0] in var_122
             ):
-                return
+                if not auto_var_122:
+                    # print("not autovar")
+                    return
             # String sanity check
-            if isinstance(event["parameters"][4], str):
-                text_data = {
-                    "type": "c12_text",
-                    "text": [event["parameters"][4].strip("'")],
-                    "pointer": [base_i],
-                }
-                page_list_events.append(text_data)
+            string_param = event["parameters"][-1]
+            
+            if isinstance(string_param, str):
+                if self.jp_rgx.search(string_param):
+                    text_data = {
+                        "type": "c12_text",
+                        "text": [event["parameters"][-1].strip("'")],
+                        "pointer": [base_i],
+                    }
+                    page_list_events.append(text_data)
             else:
                 return
 
@@ -277,7 +298,7 @@ class MVZFungler:
             if isinstance(event["parameters"][1], str):
                 text_data = {
                     "type": "text_name_change",
-                    "text": [],
+                    "text": [event["parameters"][1]],
                     "pointer": [base_i],
                     "meta": "",
                 }

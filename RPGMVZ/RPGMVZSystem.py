@@ -102,6 +102,8 @@ terms_patch = {
         "magicReflection": ["%1は魔法を跳ね返した！", "%1 reflected the magic!"],
         "meVolume": ["ME 音量", "ME Volume"],
         "obtainExp": ["%1 の%2を獲得！", "%1 %2 received!"],
+        # Commented out alternative version, will need more testing.
+        # "obtainGold": ["%1\\Ｇ 手に入れた！", "%1\\G found!"],
         "obtainGold": ["お金を %1\\G 手に入れた！", "%1\\G found!"],
         "obtainItem": ["%1を手に入れた！", "%1 found!"],
         # Commented out alternative version, will need more testing.
@@ -182,8 +184,8 @@ class SystemMVfungler(MVZFungler):
                 if var_value:
                     mapping["variables"][str(idx)] = var_value
         if self.config["System"]["switches"]:
-            self.logger.warning("Exporting variables for system, translating variables may cause the game to break!")
-            mapping["variables"] = {}
+            self.logger.warning("Exporting switches for system, translating variables may cause the game to break!")
+            mapping["switches"] = {}
             for idx, var_value in enumerate(system_data["switches"]):
                 if var_value:
                     mapping["switches"][str(idx)] = var_value

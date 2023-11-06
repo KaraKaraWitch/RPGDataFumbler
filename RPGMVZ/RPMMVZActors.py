@@ -104,10 +104,11 @@ class ActorMVFungler(MVZFungler):
                     buffer.append(skill)
             ctr = 0
             for k,_ in mappings["actors"].items():
-                mappings[k]["name"] = actors[ctr][0]
-                mappings[k]["note"] = actors[ctr][1]
-                mappings[k]["nickname"] = actors[ctr][2]
-                mappings[k]["profile"] = actors[ctr][3]
+                # k = int(k)
+                mappings['actors'][k]["name"] = actors[ctr][0]
+                mappings['actors'][k]["note"] = actors[ctr][1]
+                mappings['actors'][k]["nickname"] = actors[ctr][2]
+                mappings['actors'][k]["profile"] = actors[ctr][3]
         elif format == "xlsx":
             actors = []
             buffer = []
