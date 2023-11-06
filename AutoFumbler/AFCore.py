@@ -1,6 +1,6 @@
 import pathlib
+import re
 import typing
-import dataclasses
 
 import nestedtext
 
@@ -24,7 +24,7 @@ class AutoTranslator:
         raise NotImplementedError()
 
     def translate_events(
-        self, events: typing.List[typing.List[str]]
+        self, events: typing.Dict[str, typing.List[str]]
     ) -> typing.List[typing.List[str]]:
         """Translates a list of events (Map & CommonEvents)
 
@@ -94,19 +94,28 @@ class AutoTranslator:
         
     def write_nested(self, data:typing.Dict[str, typing.List[str]], nested:pathlib.Path) -> typing.Union[typing.List[str], typing.Dict[str,typing.Any], None]:
         nested.write_text(nestedtext.dumps(data),encoding="utf-8")
-        
-    def unpack_list_like(self, list_data:typing.List[str], sep:str="<>") -> typing.List[typing.List[str]]:
-        data = []
-        buffer = []
-        for item in list_data:
-            if item == sep:
-                data.append(buffer)
-                buffer = []
+
+
+    jp_rgx = re.compile(r"[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+", flags=re.UNICODE)
+
+    def unpack_list_like(self, list_data:typing.List[str]) -> typing.List[typing.Dict[str, str]]:
+        processing_data = []
+        output_data = []
+        for text_string in list_data:
+            if text_string.startswith("<>") and len(text_string) in [2,3]:
+                if text_string[-1] == "c":
+                    # Choices
+                    output_data.append({"typ":"choice","txt":"\n".join(processing_data)})
+                    processing_data = []
+                elif text_string[-1] == "d":
+                    # New Text in MZ
+                    output_data.append({"typ":"text","txt":"\n".join(processing_data), "char":processing_data[0]})
+                else:
+                    output_data.append({"typ":"text","txt":"\n".join(processing_data)})
+                    processing_data = []
             else:
-                buffer.append(item)
-        if buffer:
-            data.append(buffer)
-        return buffer
+                processing_data.append(text_string)
+        return output_data
         
 
     def translate_exports(

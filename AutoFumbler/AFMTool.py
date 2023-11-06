@@ -14,8 +14,6 @@ class MToolTranslator2(AutoTranslator):
         self.config = config
         self.undesire_check = config["MTool"].get("skip_undesirables", True)
 
-    jp_rgx = re.compile(r"[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+", flags=re.UNICODE)
-
     def desired_translation(self, orig:str, translated:str):
         if not self.undesire_check:
             return True

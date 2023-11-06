@@ -108,11 +108,10 @@ model = "gpt-3.5-turbo"
 # [こころ]
 # こにちは わたしはこころです！
 
-collapse_event_newlines = true
+# For google, always collapse newlines. and unexpand them later
 # Punctuations to detect on collapsing or not
+# empty means do not collapse.
 punctuations = "？！。…」♡♥、"
-max_event_lines = 3
-collapse_length = 4
 
 [MTool]
 

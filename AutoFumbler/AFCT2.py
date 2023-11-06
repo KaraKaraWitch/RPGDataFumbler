@@ -31,7 +31,7 @@ class CTranslate(AutoTranslator):
             if not filepath.parent.is_dir():
                 filepath.parent.mkdir(exist_ok=True, parents=True)
                 session = httpx.Client()
-                session.headers["user-agent"] = "AutoFumberModelDownloader/1.0.0 (github.com/KaraKaraWitch/RPGDataFumbler)"
+                session.headers["user-agent"] = "Mozilla/5.0 (compatible; AutoFumberModelDownloader/1.0.0; +http://github.com/KaraKaraWitch/RPGDataFumbler)"
 
     def __init__(self, hugging_model) -> None:
         if not ctranslate2:

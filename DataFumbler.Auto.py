@@ -30,10 +30,9 @@ app = typer.Typer()
 def mtool_translate(
     game_exec: pathlib.Path,
     events: bool = True,
-    weapons: bool = True,
-    armor: bool = True,
     items: bool = True,
     actors: bool = True,
+    names: bool = True,
 ):
     typer.secho(
         '[NOTE] This command will only pull translations that are "Complete".', fg="red"
@@ -63,10 +62,10 @@ def mtool_translate(
         print(f"Unable to find ManualTransFile.json @ {mantransfile}")
         return
     
-    from .AutoFumbler.AFMTool import MToolTranslator
+    from .AutoFumbler.AFMTool import MToolTranslator2
 
-    instance = MToolTranslator(mantransfile)
-    instance.translate_exports(handler.export_files,events, weapons, armor, items, actors)
+    instance = MToolTranslator2(mantransfile, config_dict)
+    instance.translate_exports(handler.export_files, actors, events, items, names)
 
 
 @app.command("Ooba")

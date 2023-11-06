@@ -55,6 +55,12 @@ locale = ""
 # By default is enabled as disabling it doesn't have any negative effects.
 dtext = true
 
+# Automatically if a string value is detected in code_122, it will automatically get added.
+# Since this only checks for strings, it should be fine to leave it "true"/Enabled.
+# This may over capture things. Use with caution.
+auto_code_122 = false
+# Use this to block certain variables from being translated.
+black_code_122 = []
 # If any game uses `\v[number]` inside map.json or commonevents.json, consider noting down the number inside it and write it down to translate it properly.
-# This additionally checks for string elements and skips integers, so it's generally safer.
+# This additionally checks for string elements and skips integers.
 code_122 = []
