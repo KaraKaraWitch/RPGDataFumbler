@@ -1,4 +1,5 @@
 import pathlib
+import re
 import nestedtext
 
 import orjson
@@ -74,8 +75,15 @@ class CommonEventMVFungler(MVZFungler):
                 elif text_data["type"] == "c12_text":
                     c12_pointer = text_data["pointer"][0]
                     txt_event = old_map[int(idx)]["list"][c12_pointer]
-                    txt_event["parameters"][-1] = f"'{text_data['text'][0]}'"
-                    old_map[int(idx)]["list"][c12_pointer] = txt_event
+                    has_wrong_escape = False
+                    for rgx_match in re.finditer("'",text_data['text'][0]):
+                        if text_data['text'][0][rgx_match.start()-1] != "\\":
+                            self.logger.warning(f"\"{text_data['text'][0]}\" does not have an escape sequence for >'<. Refusing to use it.")
+                            has_wrong_escape = True
+                            break
+                    if not has_wrong_escape:
+                        txt_event["parameters"][-1] = f"'{text_data['text'][0]}'"
+                        old_map[int(idx)]["list"][c12_pointer] = txt_event
         patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
 
     def export_map(self, format="nested") -> bool:
@@ -203,8 +211,15 @@ class MapsMVFungler(MVZFungler):
                     elif trans["type"] == "c12_text":
                         c12_pointer = trans["pointer"][0]
                         txt_event = page_data["list"][c12_pointer]
-                        txt_event["parameters"][4] = f"'{trans['text'][0]}'"
-                        page_data["list"][c12_pointer] = txt_event
+                        has_wrong_escape = False
+                        for rgx_match in re.finditer("'",trans['text'][0]):
+                            if trans['text'][0][rgx_match.start()-1] != "\\":
+                                self.logger.warning(f"\"{trans['text'][0]}\" does not have an escape sequence for >'<. Refusing to use it.")
+                                has_wrong_escape = True
+                                break
+                        if not has_wrong_escape:
+                            txt_event["parameters"][4] = f"'{trans['text'][0]}'"
+                            page_data["list"][c12_pointer] = txt_event
                 # Set back the page data
                 old_events[evnt_id]["pages"][page_code_idx] = page_data
             old_events[evnt_id] = event_data

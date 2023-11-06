@@ -227,6 +227,7 @@ class MVZFungler:
 
         var_122 = self.config.get("Events", {}).get("code_122", None)
         auto_var_122 = self.config.get("Events", {}).get("auto_code_122", None)
+        tile_name_pop = self.config.get("Events", {}).get("tile_name_pop", None)
         if var_122 is None or auto_var_122 is None:
             raise Exception("code_122/auto_code_122 is missing.")
 

@@ -301,7 +301,7 @@ class MVZHandler:
             patch_file = patched_folder / data_rel / rel
             # print(patch_file)
             cls = self.resolve_file(json_file, map_file, export_file)
-            print(patch_file, "patching", map_file)
+            # print(patch_file, "patching", map_file)
             if cls:
                 if map_file.exists():
                     try:

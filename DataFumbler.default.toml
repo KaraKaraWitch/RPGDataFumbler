@@ -46,7 +46,7 @@ variables = false
 
 # Change the locale for the System.json.
 # Untested & not implemented. May break things.
-locale = ""
+locale = false
 
 [Events]
 

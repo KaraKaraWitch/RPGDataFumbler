@@ -190,8 +190,8 @@ class SystemMVfungler(MVZFungler):
                 if var_value:
                     mapping["switches"][str(idx)] = var_value
         if self.config["System"]["locale"]:
-            self.logger.warning("Exporting loacle for system, translating variables may cause the game to break!")
-            mapping["locale"] = self.config["System"]["locale"]
+            self.logger.warning("Exporting locale for system, changing locale may cause the game to break!")
+            mapping["locale"] = system_data["locale"]
 
         mapping["game_title"] = system_data["gameTitle"]
         self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
@@ -214,5 +214,17 @@ class SystemMVfungler(MVZFungler):
                 system_data["skillTypes"][idx] = value
         if self.config["System"]["terms"]:
             system_data["terms"] = mapping["terms"]
+        if self.config["System"]["variables"]:
+            for k,v in mapping["variables"].items():
+                k = int(k)
+                system_data["variables"][k] = v
+        if self.config["System"]["switches"]:
+            for k,v in mapping["switches"].items():
+                k = int(k)
+                system_data["switches"][k] = v
+        if self.config["System"]["locale"]:
+            if system_data["locale"] != mapping["locale"]:
+                system_data["locale"] = mapping["locale"]
+        
         system_data["gameTitle"] = mapping["game_title"]
         patch_file.write_bytes(orjson.dumps(system_data, option=orjson.OPT_INDENT_2))
