@@ -116,7 +116,14 @@ class AutoTranslator:
             else:
                 processing_data.append(text_string)
         return output_data
-        
+    
+    def pack_translated(self, list_data:typing.List[typing.Dict[str,str]],title_case:bool=True) -> typing.List[str]:
+        final = []
+        for line_data in list_data:
+            final.extend([i if title_case else i for i in line_data["txt"].split("\n")])
+            final.append("<>" if line_data["typ"] == "text" else "<>c")
+        return final
+
 
     def translate_exports(
         self,
