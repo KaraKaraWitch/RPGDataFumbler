@@ -22,6 +22,8 @@ class SkillsMVfungler(MVZFungler):
         for skill in skill_data:
             if not skill:
                 continue
+            if not skill["name"]:
+                continue
 
             fmt_data = {
                 "name": skill["name"],
@@ -30,6 +32,7 @@ class SkillsMVfungler(MVZFungler):
             if skill["description"]:
                 fmt_data["desc"] = skill["description"]
             mapping["skills"][str(skill["id"])] = fmt_data
+        self.mapped_file.write_bytes(orjson.dumps(mapping, option=orjson.OPT_INDENT_2))
 
     def apply_maps(self, patch_file: pathlib.Path) -> bool:
         mapping = self.read_mapped()
@@ -75,11 +78,12 @@ class SkillsMVfungler(MVZFungler):
                     buffer.append(skill)
             ctr = 0
             for k, _ in mappings["skills"].items():
-                mappings[k]["name"] = skills[ctr][0]
-                mappings[k]["msgs"][0] = skills[ctr][1]
-                mappings[k]["msgs"][1] = skills[ctr][2]
-                if mappings[k]["desc"]:
-                    mappings[k]["desc"] = skills[ctr][3]
+                mappings["skills"][k]["name"] = skills[ctr][0]
+                mappings["skills"][k]["msgs"][0] = skills[ctr][1]
+                mappings["skills"][k]["msgs"][1] = skills[ctr][2]
+                if "desc" in mappings["skills"][k]:
+                    mappings["skills"][k]["desc"] = skills[ctr][3]
+                ctr += 1
         elif format == "xlsx":
             skills = []
             buffer = []
@@ -99,7 +103,7 @@ class SkillsMVfungler(MVZFungler):
                 mappings[k]["name"] = skills[ctr][0]
                 mappings[k]["msgs"][0] = skills[ctr][1]
                 mappings[k]["msgs"][1] = skills[ctr][2]
-                if mappings[k]["desc"]:
+                if "desc" in mappings[k]:
                     mappings[k]["desc"] = skills[ctr][3]
         else:
             raise Exception(f"Unknown format: {format}")
@@ -117,7 +121,7 @@ class SkillsMVfungler(MVZFungler):
                 export_actors["Skills"].append(skill["name"])
                 export_actors["Skills"].append(skill["msgs"][0])
                 export_actors["Skills"].append(skill["msgs"][1])
-                if skill["desc"]:
+                if "desc" in skill:
                     export_actors["Skills"].append(skill["desc"])
                 export_actors["Skills"].append("<>")
             self.export_nested(export_actors)
@@ -128,7 +132,7 @@ class SkillsMVfungler(MVZFungler):
                 export_actors["Skills"].append(skill["name"])
                 export_actors["Skills"].append(skill["msgs"][0])
                 export_actors["Skills"].append(skill["msgs"][1])
-                if skill["desc"]:
+                if "desc" in skill:
                     export_actors["Skills"].append(skill["desc"])
                 export_actors["Skills"].append("<>")
             self.export_excel(export_actors)

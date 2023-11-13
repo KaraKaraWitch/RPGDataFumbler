@@ -5,6 +5,7 @@ import typing
 import orjson
 
 from .RPGMVZItems import ItemMVFungler
+from .RPGMVZEnemy import EnemyMVFungler
 from .RPGMVZEvents import CommonEventMVFungler, MapsMVFungler
 from .RPGMVZSystem import SystemMVfungler
 from .RPMMVZActors import ActorMVFungler
@@ -105,6 +106,8 @@ class MVZHandler:
                 and "armors" in orig_file.name.lower()
             ):
                 return ItemMVFungler(orig_file, map_file, export_file, self.config)
+            if "enemies" in orig_file.name.lower():
+                return EnemyMVFungler(orig_file, map_file, export_file, self.config)
             if "commonevents" in orig_file.name.lower():
                 return CommonEventMVFungler(
                     orig_file, map_file, export_file, self.config

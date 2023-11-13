@@ -113,6 +113,61 @@ model = "gpt-3.5-turbo"
 # empty means do not collapse.
 punctuations = "？！。…」♡♥、"
 
+# Collapse consecutive characters.
+collapse_chars_tolerance = 1
+
+# This determines if the first line is the name or not.
+# If the the first line is 15 characters long or less, it's determined to be a name.
+# This should be adjusted to yoru specific game. 
+collapse_event_newlines = 15
+
+# Additionally, replace the following to clean up the text a bit more.
+# You probably should not need to do this...
+replacements = [
+    # For Gehenna (Aka, more or less worst case scenario. here is some filters.)
+    ["any","ぷはぁっ","ぷは"],
+    ["any","はぁ","は"],
+    ["any","うはぁ","うは"],
+    ["any","はっ","は"],
+    ["any","はぁーっ","はぁ"],
+    ["any","あ～っ","あ～"],
+    ["any","んっ","ん"],
+    ["any","ひぃ","ひ"],
+    ["any","ーっ",""],
+    ["any","～っ",""],
+    ["any","あ～に","あに"],
+    ["any","ぼぉ～っ","ぼ"],
+    ["any","あ～あ","ああ"],
+    ["any","あ～♥","あ～ ♥"],
+    ["any","ぁっ","ぁ"],
+    ["any","ゃぁ♥","ゃ ♥"],
+    ["any","ぎゃあっ","ぎゃあ"],
+    # Succubus Trap
+    ["any","゛",""],
+    ["any","　"," "],
+    ["any","？","?"],
+    ["any","！","!"],
+    ["any","「","\""],
+    ["any","」","\""],
+    ["any","あぁあっ","ああ"],
+    ["any","あっ！","あ！"],
+    ["any","てっ！","て！"],
+    ["any","はぁ","は"],
+    ["any","ふぅっ","ふぅ"],
+    ["any","あぁっ","あぁ"],
+    ["any","はぁっ","はぁ"],
+    ["any","ひゃうっ","ひゃう~"],
+    ["any","うぁ","う"],
+    ["any","あああ","ああ"],
+
+
+    # Drop any dan
+
+
+]
+# Minimum line to break on. If your txt bar is wider, you can probably set it higher. 20 seems to be a nice number...
+wrap_max = 30
+
 [MTool]
 
 # "MTool" Translator....

@@ -29,10 +29,10 @@ app = typer.Typer()
 @app.command(name="MTool")
 def mtool_translate(
     game_exec: pathlib.Path,
-    events: bool = True,
-    items: bool = True,
-    actors: bool = True,
-    names: bool = True,
+    events: bool = False,
+    items: bool = False,
+    actors: bool = False,
+    names: bool = False,
 ):
     typer.secho(
         '[NOTE] This command will only pull translations that are "Complete".', fg="red"
@@ -67,15 +67,49 @@ def mtool_translate(
     instance = MToolTranslator2(mantransfile, config_dict)
     instance.translate_exports(handler.export_files, actors, events, items, names)
 
+@app.command("Google")
+def Google_translator(
+    game_exec: pathlib.Path,
+    events: bool = False,
+    weapons: bool = False,
+    armor: bool = False,
+    items: bool = False,
+    actors: bool = False,
+):
+    if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
+        raise FileNotFoundError("Expecting a game executable.")
+
+    config = game_exec.resolve().parent / "DataFumbler.toml"
+    config_auto = pathlib.Path(__file__).resolve().parent / "DataFumblerAuto.toml"
+    if not config.exists():
+        raise Exception("Config Read Error. Config not found.")
+    if not config_auto.exists():
+        raise Exception("ooba needs a DataFumblerAuto.toml with a \"prompt\" written inside it.")
+    try:
+        config_dict = tomli.loads(config.read_text(encoding="utf-8"))
+    except tomli.TOMLDecodeError:
+        raise Exception("Config Read Error. Decode Error.")
+    
+    try:
+        config_auto_dict = tomli.loads(config_auto.read_text(encoding="utf-8"))
+    except tomli.TOMLDecodeError:
+        raise Exception("ConfigAuto Read Error. Decode Error.")
+    
+    handler = MVZHandler(game_exec, config_dict)
+
+    from AutoFumbler.AFGoogle import GoogleTranslator
+
+    model = GoogleTranslator(config_auto_dict, config_dict)
+    model.translate_exports(handler.export_files, actors, events, items, False)
 
 @app.command("Ooba")
 def Ooba_translator(
     game_exec: pathlib.Path,
-    events: bool = True,
-    weapons: bool = True,
-    armor: bool = True,
-    items: bool = True,
-    actors: bool = True,
+    events: bool = False,
+    weapons: bool = False,
+    armor: bool = False,
+    items: bool = False,
+    actors: bool = False,
 ):
     if not game_exec.is_file() or not game_exec.suffix.endswith(".exe"):
         raise FileNotFoundError("Expecting a game executable.")

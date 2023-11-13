@@ -2,6 +2,8 @@
 
 Because I hate MTool.
 
+[![](https://imgs.xkcd.com/comics/automation.png)](https://xkcd.com/1319/ "'Automating' comes from the roots 'auto-' meaning 'self-', and 'mating', meaning 'screwing'.")
+
 ## Workflow
 
 1. Map (Extracts text to a simplified json representation)
@@ -21,10 +23,12 @@ Because I hate MTool.
 
 Supported "Translators"
 
-- MTool (See notes below)
 - Google
-- DeepL
-- MBart ("Offline" MBart Translation)
+
+To be done:
+- MTool (See notes below)
+- DeepL (?)
+- Sugoi V4 Offline
 
 ### Notes
 

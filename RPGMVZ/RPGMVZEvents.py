@@ -55,6 +55,11 @@ class CommonEventMVFungler(MVZFungler):
                             txt_event = old_map[int(idx)]["list"][ptr]
                             txt_event["parameters"][0] = text_data["text"][txt_idx]
                             old_map[int(idx)]["list"][ptr] = txt_event
+                elif text_data["type"] == "text_name_change":
+                    ptr = text_data["pointer"][0]
+                    txt_event = old_map[int(idx)]["list"][ptr]
+                    txt_event["parameters"][1] = text_data["text"][0]
+                    old_map[int(idx)]["list"][ptr] = txt_event
                 elif text_data["type"] == "text_choice":
                     # Note for MZ that this for loop should not execute since the list is empty.
                     for txt_idx, ptr in enumerate(text_data["pointer"][1:]):
@@ -244,7 +249,11 @@ class MapsMVFungler(MVZFungler):
                     for event in page_events:
                         # print(text_data)
                         events.extend(event["text"])
-                        events.append("<>")
+                        if event["type"] == "text_choice":
+                            # hack to work around detection of <>
+                            events.append("<>c")
+                        else:
+                            events.append("<>")
                 z[evidx] = events
             self.export_nested(z)
             return True

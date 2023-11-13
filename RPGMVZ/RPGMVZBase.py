@@ -342,7 +342,7 @@ class MVZFungler:
                 # MZ appears to no need processing for 102 codes...
                 bse_event = page_list_data[base_i]
                 text_data["text"] = bse_event["parameters"][0]
-                text_data["pointer"] = base_i
+                text_data["pointer"] = [base_i]
                 page_list_events.append(text_data)
             else:
 

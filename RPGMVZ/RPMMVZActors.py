@@ -109,6 +109,7 @@ class ActorMVFungler(MVZFungler):
                 mappings['actors'][k]["note"] = actors[ctr][1]
                 mappings['actors'][k]["nickname"] = actors[ctr][2]
                 mappings['actors'][k]["profile"] = actors[ctr][3]
+                ctr += 1
         elif format == "xlsx":
             actors = []
             buffer = []

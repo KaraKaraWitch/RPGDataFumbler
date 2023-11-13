@@ -6,7 +6,7 @@
 # Replace existing files in the "translations folder" folder when mapping?
 replace = false
 
-# Defines the game "type". Generally, if you see "www" folder together with the, it is "MV". If you see "data" 
+# Defines the game "type". Generally, if you see "www" folder together with "game.exe", it is "MV" game. If you see "data" together with "game.exe", it's a "MZ" game.
 type = "MV"
 
 # Configs relating to System.json mapping.
