@@ -81,9 +81,11 @@ class CommonEventMVFungler(MVZFungler):
                     c12_pointer = text_data["pointer"][0]
                     txt_event = old_map[int(idx)]["list"][c12_pointer]
                     has_wrong_escape = False
-                    for rgx_match in re.finditer("'",text_data['text'][0]):
-                        if text_data['text'][0][rgx_match.start()-1] != "\\":
-                            self.logger.warning(f"\"{text_data['text'][0]}\" does not have an escape sequence for >'<. Refusing to use it.")
+                    for rgx_match in re.finditer("'", text_data["text"][0]):
+                        if text_data["text"][0][rgx_match.start() - 1] != "\\":
+                            self.logger.warning(
+                                f"\"{text_data['text'][0]}\" does not have an escape sequence for >'<. Refusing to use it. File name: {patch_file.name}"
+                            )
                             has_wrong_escape = True
                             break
                     if not has_wrong_escape:
@@ -138,7 +140,7 @@ class CommonEventMVFungler(MVZFungler):
             reconstruct_events = []
             event_data = []
             for line in lines:
-                if line.startswith("<>") and len(line) in [2,3]:
+                if line.startswith("<>") and len(line) in [2, 3]:
                     reconstruct_events.append(event_data)
                     event_data = []
                 else:
@@ -164,7 +166,6 @@ class CommonEventMVFungler(MVZFungler):
 
 
 class MapsMVFungler(MVZFungler):
-
     fungler_type = "maps"
 
     def apply_maps(self, patch_file: pathlib.Path):
@@ -194,6 +195,11 @@ class MapsMVFungler(MVZFungler):
                                 text_event = page_data["list"][ptr]
                                 text_event["parameters"][0] = trans["text"][txt_idx]
                                 page_data["list"][ptr] = text_event
+                    elif trans["type"] == "text_name_change":
+                        ptr = trans["pointer"][0]
+                        text_event = page_data["list"][ptr]
+                        text_event["parameters"][1] = trans["text"][0]
+                        page_data["list"][ptr] = text_event
                     elif trans["type"] == "text_choice":
                         # For Code 402
                         for txt_idx, ptr in enumerate(trans["pointer"][1:]):
@@ -217,9 +223,11 @@ class MapsMVFungler(MVZFungler):
                         c12_pointer = trans["pointer"][0]
                         txt_event = page_data["list"][c12_pointer]
                         has_wrong_escape = False
-                        for rgx_match in re.finditer("'",trans['text'][0]):
-                            if trans['text'][0][rgx_match.start()-1] != "\\":
-                                self.logger.warning(f"\"{trans['text'][0]}\" does not have an escape sequence for >'<. Refusing to use it.")
+                        for rgx_match in re.finditer("'", trans["text"][0]):
+                            if trans["text"][0][rgx_match.start() - 1] != "\\":
+                                self.logger.warning(
+                                    f"\"{trans['text'][0]}\" does not have an escape sequence for >'<. Refusing to use it."
+                                )
                                 has_wrong_escape = True
                                 break
                         if not has_wrong_escape:
@@ -294,7 +302,7 @@ class MapsMVFungler(MVZFungler):
             reconstruct_events = []
             event_data = []
             for line in lines:
-                if line.startswith("<>") and len(line) in [2,3]:
+                if line.startswith("<>") and len(line) in [2, 3]:
                     reconstruct_events.append(event_data)
                     event_data = []
                 else:
