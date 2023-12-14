@@ -237,6 +237,7 @@ class MapsMVFungler(MVZFungler):
                 old_events[evnt_id]["pages"][page_code_idx] = page_data
             old_events[evnt_id] = event_data
         old_map["events"] = old_events
+        old_map["displayName"] = mapping["name"]
         patch_file.write_bytes(orjson.dumps(old_map, option=orjson.OPT_INDENT_2))
         return True
 
